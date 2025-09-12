@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { ulid } from 'ulid';
 import bcrypt from "bcrypt";
 import * as userRepository from '../repositories/user.repository';
 import pool from "../db";
@@ -27,7 +27,7 @@ export async function insertUser(input: { username: string; email: string; role:
   if (!isValidRole(input.role)) return null;
   const pwd_hash = await bcrypt.hash(input.password, SALT);
   const newUser: User = {
-    user_id: randomUUID(),
+    user_id: ulid(),
     username: input.username,
     email: input.email,
     role: input.role,

@@ -12,9 +12,9 @@
 - @types/jest
 - cross-env
 - ts-node-dev
-- bcrypt
+- ulid
 
-## example cURL
+## Example cURL
 ```bash
 # make user
 curl -s -X POST http://localhost:3000/users \
@@ -33,7 +33,11 @@ curl -s http://localhost:3000/users/1 | jq
 # delete user
 curl -X DELETE http://localhost:3000/users/1
 ```
+## PostgreSQL
+```
+psql -h localhost -p 5432 -U <usuario> -d <nombre_db>
+```
 
-### Notes
+## Notes
 - Default port: `3000` (use `PORT` to change it).
 - Using `npm run ...`
