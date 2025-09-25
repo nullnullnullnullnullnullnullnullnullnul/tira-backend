@@ -60,7 +60,7 @@ export async function addUserToTeam(
 ): Promise<TeamMember | null> {
   if (!['leader', 'user'].includes(role)) throw new Error('Invalid role');
   // Team details
-  const [ownerTeam] = await teamRepository.getTeamDetails(team_id);
+  const [ownerTeam] = await teamRepository.getTeamById(team_id);
   if (!ownerTeam) throw new Error('Team not found');
   // Only team leaders can add members
   if (ownerTeam.owner_id !== requestingUserId) throw new Error('Only the owner can add members');

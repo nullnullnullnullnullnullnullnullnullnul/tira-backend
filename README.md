@@ -15,8 +15,8 @@
 - ulid
 
 ## Example cURL
+### Users
 ```bash
-# USERS
 # Make user
 curl -s -X POST http://localhost:3000/users \
   -H 'Content-Type: application/json' \
@@ -33,8 +33,9 @@ curl -s http://localhost:3000/users/1 | jq
 
 # Delete user
 curl -X DELETE http://localhost:3000/users/1
-
-# TEAMS
+```
+### Teams
+```bash
 # Create a team
 curl -s -X POST http://localhost:3000/teams \
   -H 'Content-Type: application/json' \
@@ -44,7 +45,7 @@ curl -s -X POST http://localhost:3000/teams \
 curl -s "http://localhost:3000/teams/user/<user_id>" | jq
 
 # Get team details (members included)
-curl -s "http://localhost:3000/teams/<team_id>/details?user_id=<user_id>" | jq
+curl -s http://localhost:3000/teams/<team_id>/details/<user_id> | jq
 
 # Update team name
 curl -s -X PATCH http://localhost:3000/teams/<team_id> \
@@ -64,8 +65,9 @@ curl -s "http://localhost:3000/teams/<team_id>/members?user_id=<requesting_user_
 
 # Get team tasks
 curl -s "http://localhost:3000/teams/<team_id>/tasks?user_id=<requesting_user_id>" | jq
-
 ```
+```
+
 ## PostgreSQL
 ```
 psql -h 127.0.0.1 -p 5432 -U <user> -d <db_name> -f [OPTIONAL] <filename>

@@ -62,10 +62,9 @@ export async function addUserToTeam(req: Request, res: Response) {
 // DELETE /teams/:team_id/members/:user_id
 export async function removeUserFromTeam(req: Request, res: Response) {
   try {
-    const { team_id, user_id } = req.params;
-    const { performed_by } = req.body;
-    const result = await teamService.removeUserFromTeam(team_id as string, user_id as string, performed_by);
-    res.json({ success: result });
+    const { team_id, user_id, performed_by } = req.params; // <-- usar params
+    const result = await teamService.removeUserFromTeam(team_id as string, user_id as string, performed_by as string);
+    res.status(204).send(); // mejor que enviar { success: true }
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
