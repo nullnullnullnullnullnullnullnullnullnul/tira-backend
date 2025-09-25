@@ -36,11 +36,6 @@ export async function getUserTeams(user_id: string): Promise<Team[]> {
   return await teamRepository.getTeamsByUserId(user_id);
 }
 
-// Get team details (members included)
-export async function getTeamDetails(user_id: string): Promise<TeamRow[]> {
-  return await teamRepository.getTeamDetails(user_id);
-}
-
 // Update team name
 export async function updateTeamName(team_id: string, name: string, user_id: string): Promise<Team> {
   if (!name.trim()) throw new Error('Team name cannot be empty');
@@ -60,7 +55,7 @@ export async function addUserToTeam(
 ): Promise<TeamMember | null> {
   if (!['leader', 'user'].includes(role)) throw new Error('Invalid role');
   // Team details
-  const [ownerTeam] = await teamRepository.getTeamById(team_id);
+  const [ownerTeam] = await teamRepository.getTeamDetails(team_id);
   if (!ownerTeam) throw new Error('Team not found');
   // Only team leaders can add members
   if (ownerTeam.owner_id !== requestingUserId) throw new Error('Only the owner can add members');

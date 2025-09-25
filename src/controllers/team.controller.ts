@@ -24,17 +24,6 @@ export async function getUserTeams(req: Request, res: Response) {
   }
 }
 
-// GET /teams/:user_id/details
-export async function getTeamDetails(req: Request, res: Response) {
-  try {
-    const { user_id } = req.params;
-    const details = await teamService.getTeamDetails(user_id as string);
-    res.json(details);
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
-  }
-}
-
 // PATCH /teams/:team_id
 export async function updateTeamName(req: Request, res: Response) {
   try {

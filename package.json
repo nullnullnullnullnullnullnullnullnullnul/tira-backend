@@ -13,11 +13,16 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@types/yamljs": "^0.2.34",
     "bcrypt": "^6.0.0",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
     "pg": "^8.16.3",
-    "ulid": "^3.0.1"
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "ulid": "^3.0.1",
+    "yaml": "^2.8.1",
+    "yamljs": "^0.3.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
@@ -25,6 +30,7 @@
     "@types/jest": "^30.0.0",
     "@types/node": "^24.3.1",
     "@types/pg": "^8.15.5",
+    "@types/swagger-ui-express": "^4.1.8",
     "cross-env": "^10.0.0",
     "jest": "^30.1.3",
     "ts-jest": "^29.4.1",

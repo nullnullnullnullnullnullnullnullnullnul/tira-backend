@@ -1,0 +1,382 @@
+openapi: 3.1.0
+info:
+  title: Tira API Rest
+  version: 1.0.0
+  description: API REST for users and teams using PostgreSQL
+servers:
+  - url: http://localhost:3000
+    description: Api service for Tira implementation
+
+paths:
+  /users:
+    get:
+      summary: List all users
+      responses:
+        '200':
+          description: Array of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+    post:
+      summary: Create a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserInput'
+      responses:
+        '201':
+          description: Created user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /users/{id}:
+    get:
+      summary: Get a user by ID
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: User object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    delete:
+      summary: Delete a user by ID
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      responses:
+        '204':
+          description: User deleted successfully
+
+  /teams:
+    post:
+      summary: Create a new team
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - owner_id
+                - name
+              properties:
+                owner_id:
+                  type: string
+                name:
+                  type: string
+      responses:
+        '201':
+          description: Team created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+
+  /teams/user/{user_id}:
+    get:
+      summary: Get all teams for a user
+      parameters:
+        - in: path
+          name: user_id
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Array of teams
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Team'
+
+  /teams/{team_id}/details/{user_id}:
+    get:
+      summary: Get team details including members
+      parameters:
+        - in: path
+          name: team_id
+          schema:
+            type: string
+          required: true
+        - in: path
+          name: user_id
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Array of team rows with members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TeamRow'
+
+  /teams/{team_id}:
+    patch:
+      summary: Update team name
+      parameters:
+        - in: path
+          name: team_id
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - user_id
+              properties:
+                name:
+                  type: string
+                user_id:
+                  type: string
+      responses:
+        '200':
+          description: Team updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+    delete:
+      summary: Delete a team
+      parameters:
+        - in: path
+          name: team_id
+          schema:
+            type: string
+          required: true
+      responses:
+        '204':
+          description: Team deleted
+
+  /teams/{team_id}/members:
+    get:
+      summary: List members of a team
+      parameters:
+        - in: path
+          name: team_id
+          schema:
+            type: string
+          required: true
+        - in: query
+          name: user_id
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Array of team members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TeamMember'
+    post:
+      summary: Add a user to a team
+      parameters:
+        - in: path
+          name: team_id
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userToAddId
+                - requestingUserId
+                - role
+              properties:
+                userToAddId:
+                  type: string
+                requestingUserId:
+                  type: string
+                role:
+                  type: string
+                  enum: [leader, user]
+      responses:
+        '201':
+          description: User added to team
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamMember'
+
+  /teams/{team_id}/members/{user_id}:
+    delete:
+      summary: Remove a user from a team
+      parameters:
+        - in: path
+          name: team_id
+          schema:
+            type: string
+          required: true
+        - in: path
+          name: user_id
+          schema:
+            type: string
+          required: true
+        - in: query
+          name: performed_by
+          schema:
+            type: string
+          required: true
+      responses:
+        '204':
+          description: User removed from team
+
+  /teams/{team_id}/tasks:
+    get:
+      summary: Get tasks of a team
+      parameters:
+        - in: path
+          name: team_id
+          schema:
+            type: string
+          required: true
+        - in: query
+          name: user_id
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Array of tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TeamTask'
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        user_id:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        created_at:
+          type: string
+        last_login:
+          type: string
+          nullable: true
+
+    UserInput:
+      type: object
+      required:
+        - username
+        - email
+        - role
+        - password
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        password:
+          type: string
+
+    Team:
+      type: object
+      properties:
+        team_id:
+          type: string
+        owner_id:
+          type: string
+        name:
+          type: string
+        created_at:
+          type: string
+
+    TeamRow:
+      type: object
+      properties:
+        team_id:
+          type: string
+        name:
+          type: string
+        owner_id:
+          type: string
+        member_user_id:
+          type: string
+          nullable: true
+        member_role:
+          type: string
+          nullable: true
+        member_invited_at:
+          type: string
+          nullable: true
+        member_joined_at:
+          type: string
+          nullable: true
+
+    TeamMember:
+      type: object
+      properties:
+        team_members_id:
+          type: string
+        team_id:
+          type: string
+        user_id:
+          type: string
+        role:
+          type: string
+        invited_at:
+          type: string
+        joined_at:
+          type: string
+
+    TeamTask:
+      type: object
+      properties:
+        task_id:
+          type: string
+        team_id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+        due_date:
+          type: string
+          nullable: true

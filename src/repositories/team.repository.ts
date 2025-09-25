@@ -15,11 +15,9 @@ export async function insertTeam(team: Team): Promise<Team> {
 // List all groups from user...
 export async function getTeamsByUserId(id: string): Promise<Team[]> {
   const result = await pool.query(
-    `SELECT DISTINCT t.*
-     FROM teams t
-     LEFT JOIN team_members tm ON t.team_id = tm.team_id
-     WHERE t.owner_id = $1
-        OR tm.user_id = $1
+    `SELECT *
+     FROM teams
+     WHERE owner_id = $1
     `, [id]
   );
   return result.rows;

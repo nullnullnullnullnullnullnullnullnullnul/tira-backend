@@ -13,6 +13,9 @@
 - cross-env
 - ts-node-dev
 - ulid
+- swagger-ui-express
+- swagger-js-doc
+- @types/swagger-ui-express
 
 ## Example cURL
 ### Users
