@@ -35,7 +35,7 @@ curl -X DELETE http://localhost:3000/users/1
 ```
 ## PostgreSQL
 ```
-psql -h localhost -p 5432 -U <usuario> -d <nombre_db>
+psql -h 127.0.0.1 -p 5432 -U <user> -d <db_name> -f [OPTIONAL] <filename>
 ```
 
 ## Notes

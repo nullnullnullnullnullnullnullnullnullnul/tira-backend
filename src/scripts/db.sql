@@ -1,23 +1,36 @@
+-- Variables
+-- \set db_user `echo $DB_USER`
+-- \set db_pass `echo $DB_PASS`
+-- \set db_name `echo $DB_NAME`
 
-CREATE USER tira WITH PASSWORD '111111';
+-- CREATE USER :db_user WITH PASSWORD :'db_pass';
 
-CREATE DATABASE tira_db OWNER tira;
+-- CREATE DATABASE :db_name OWNER :db_user;
 -- CREATE DATABASE test;
 
 -- CONNECT
-\c tira_db;
+-- \c :db_name;
 -- \c test;
 
--- ENUMS
+
+-- ====================================
+-- ============== ENUMS ===============
+-- ====================================
+
 CREATE TYPE user_role_enum AS ENUM('leader', 'user');
 CREATE TYPE task_status_enum AS ENUM('pending', 'ongoing', 'done', 'canceled');
 CREATE TYPE task_priority_enum AS ENUM('high', 'medium', 'low');
 
--- TABLES
+
+-- ====================================
+-- ============== TABLES ==============
+-- ====================================
+
+-- users
 CREATE TABLE users(
   user_id       CHAR(26) PRIMARY KEY,
   username      VARCHAR(50) NOT NULL,
-  email         VARCHAR(50),
+  email         VARCHAR(254),
   pwd_hash      TEXT NOT NULL,
   role          user_role_enum NOT NULL,
   created_at    TIMESTAMP DEFAULT NOW(),
@@ -26,12 +39,14 @@ CREATE TABLE users(
   CONSTRAINT users_email_uq UNIQUE(email)
 );
 
+-- tags
 CREATE TABLE tags(
   tag_id        CHAR(26) PRIMARY KEY,
   name          VARCHAR(20) NOT NULL,
   CONSTRAINT tags_name_uq UNIQUE(name)
 );
 
+-- teams
 CREATE TABLE teams(
   team_id       CHAR(26) PRIMARY KEY,
   owner_id      CHAR(26) NOT NULL,
@@ -45,6 +60,7 @@ CREATE TABLE teams(
   CONSTRAINT name_uq UNIQUE(name, owner_id) -- name + owner_id 
 );
 
+-- team members
 CREATE TABLE team_members(
   team_members_id   CHAR(26) PRIMARY KEY,
   team_id           CHAR(26) NOT NULL,
@@ -61,6 +77,7 @@ CREATE TABLE team_members(
   CONSTRAINT team_members_team_user_uq UNIQUE(team_id, user_id)
 );
 
+-- tasks
 CREATE TABLE tasks(
   task_id           CHAR(26) PRIMARY KEY,
   team_id           CHAR(26) NOT NULL,
@@ -83,8 +100,9 @@ CREATE TABLE tasks(
     REFERENCES users(user_id)
     ON DELETE SET NULL,
   CONSTRAINT tasks_deadline_ck CHECK (deadline IS NULL OR deadline > NOW())
-); -- pueden quedar huerfanas pero no se pierden.
+); -- May be orphaned but we dont lose them.
 
+-- task tags
 CREATE TABLE task_tags(
   task_tags_id  CHAR(26) PRIMARY KEY,
   task_id       CHAR(26) NOT NULL,
@@ -97,6 +115,7 @@ CREATE TABLE task_tags(
     ON DELETE CASCADE
 );
 
+-- task status history
 CREATE TABLE task_status_history(
   history_id    CHAR(26) PRIMARY KEY,
   task_id       CHAR(26),
@@ -111,6 +130,7 @@ CREATE TABLE task_status_history(
     ON DELETE SET NULL
 );
 
+-- comments
 CREATE TABLE comments(
   comment_id    CHAR(26) PRIMARY KEY,
   task_id       CHAR(26) NOT NULL,
@@ -125,13 +145,21 @@ CREATE TABLE comments(
     ON DELETE SET NULL
 );
 
--- Probably useful INDEX
-CREATE INDEX users_username_idx ON users(username);
+
+-- ====================================
+-- ============= INDEXES ==============
+-- ====================================
+-- For better performance on frequent queries
+-- CREATE INDEX users_username_idx ON users(username); -> psql creates indexes for unique constraint
 CREATE INDEX tasks_team_idx ON tasks(team_id);
 CREATE INDEX tasks_assigned_to_idx ON tasks(assigned_to);
 CREATE INDEX comments_task_idx ON comments(task_id);
 
--- Functions
+
+-- ====================================
+-- ============ FUNCTIONS =============
+-- ====================================
+
 CREATE OR REPLACE FUNCTION set_last_modified_at_fn()
 RETURNS TRIGGER AS
 $$
@@ -141,16 +169,24 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Triggers
+
+-- ====================================
+-- ============ TRIGGERS ==============
+-- ====================================
+
 CREATE TRIGGER update_last_modified_at_tr
 BEFORE UPDATE ON tasks
 FOR EACH ROW
 EXECUTE FUNCTION set_last_modified_at_fn();
 
-GRANT ALL PRIVILEGES ON DATABASE tira_db TO tira;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO tira;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO tira;
+GRANT CONNECT ON DATABASE tira_db TO tira;
+GRANT USAGE ON SCHEMA public TO tira;
 
--- DELETE
---\c postgres
---DROP DATABASE tira_db;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO tira;
+GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO tira;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO tira;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO tira;
