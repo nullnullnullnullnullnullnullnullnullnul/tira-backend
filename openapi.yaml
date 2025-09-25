@@ -108,30 +108,6 @@ paths:
                 items:
                   $ref: '#/components/schemas/Team'
 
-  /teams/{team_id}/details/{user_id}:
-    get:
-      summary: Get team details including members
-      parameters:
-        - in: path
-          name: team_id
-          schema:
-            type: string
-          required: true
-        - in: path
-          name: user_id
-          schema:
-            type: string
-          required: true
-      responses:
-        '200':
-          description: Array of team rows with members
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/TeamRow'
-
   /teams/{team_id}:
     patch:
       summary: Update team name
