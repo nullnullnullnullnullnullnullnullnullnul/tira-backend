@@ -6,7 +6,7 @@ import { Client } from 'pg';
 import { env } from "../config/env";
 
 const SALT = 10;
-// Clients
+
 const superClient = new Client({
   host: env.db.host,
   port: env.db.port,
@@ -23,7 +23,6 @@ const dbClient = new Client({
   database: env.db.database,
 });
 
-// Data
 const users = [
   { username: 'alice', email: 'alice@example.com', role: 'leader', password: 'password123' },
   { username: 'bob', email: 'bob@example.com', role: 'leader', password: 'secret456' },
@@ -47,11 +46,9 @@ const comments = [
   { content: 'Update README after API is done.' }
 ];
 
-// Keep track of inserted IDs
 const userIdMap: Record<string, string> = {};
 const teamIdMap: Record<string, string> = {};
 
-// Functions
 async function runSqlFile(client: Client, filename: string) {
   const sql = fs.readFileSync(path.join(__dirname, filename), 'utf-8');
   await client.query(sql);
@@ -147,27 +144,22 @@ async function insertComments() {
   console.log('Comments inserted');
 }
 
-// Main
 async function main() {
   try {
     await superClient.connect();
-    // Terminates other connections to the database
     await superClient.query(
       `SELECT pg_terminate_backend(pid)
        FROM pg_stat_activity
        WHERE datname = $1 AND pid <> pg_backend_pid()`,
       [env.db.database]
     );
-    // Drops database and user
     await superClient.query(`DROP DATABASE IF EXISTS ${env.db.database}`);
     await superClient.query(`DROP ROLE IF EXISTS ${env.db.user}`);
-    // Recreates everything
     await superClient.query(`CREATE USER ${env.db.user} WITH PASSWORD '${env.db.pass}'`);
     await superClient.query(`CREATE DATABASE ${env.db.database} OWNER ${env.db.user}`);
     await superClient.end();
     await dbClient.connect();
     await runSqlFile(dbClient, 'db.sql');
-    // Inserts testing data
     await insertUsers();
     await insertTeams();
     await insertTeamMembers();
