@@ -16,21 +16,21 @@
 
 ## Example cURL
 ```bash
-# make user
+# Make user
 curl -s -X POST http://localhost:3000/users \
   -H 'Content-Type: application/json' \
   -d '{"username":"Ada Lovelace","email":"ada@example.com", "role": "user","password":"meow"}' | jq
 
-# all users
+# All users
 curl -s 'http://localhost:3000/users/' | jq
 
-# search by name
+# Search by name
 curl -s 'http://localhost:3000/users?name=ada' | jq
 
-# get by id
+# Get by id
 curl -s http://localhost:3000/users/1 | jq
 
-# delete user
+# Delete user
 curl -X DELETE http://localhost:3000/users/1
 ```
 ## PostgreSQL

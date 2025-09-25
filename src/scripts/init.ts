@@ -3,32 +3,24 @@ import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcrypt';
 import { Client } from 'pg';
-import dotenv from 'dotenv';
+import { env } from "../config/env";
 
-dotenv.config();
 const SALT = 10;
-const DB_SUPERUSER = process.env.DB_SUPERUSER || 'postgres';
-const DB_SUPERPASS = process.env.DB_SUPERPASS || '';
-const DB_HOST = process.env.DB_HOST || 'localhost';
-const DB_PORT = process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 5432;
-const DB_USER = process.env.DB_USER || 'tira';
-const DB_PASSWORD = process.env.DB_PASSWORD || 'supersecret';
-const DB_NAME = process.env.DB_NAME || 'tira_db';
-
 // Clients
 const superClient = new Client({
-  host: DB_HOST,
-  port: DB_PORT,
-  user: DB_SUPERUSER,
-  password: DB_SUPERPASS,
-  database: 'postgres'
+  host: env.db.host,
+  port: env.db.port,
+  user: env.super.user,
+  password: env.super.pass,
+  database: "postgres",
 });
+
 const dbClient = new Client({
-  host: DB_HOST,
-  port: DB_PORT,
-  user: DB_USER,
-  password: DB_PASSWORD,
-  database: DB_NAME
+  host: env.db.host,
+  port: env.db.port,
+  user: env.db.user,
+  password: env.db.pass,
+  database: env.db.database,
 });
 
 // Data
@@ -164,14 +156,14 @@ async function main() {
       `SELECT pg_terminate_backend(pid)
        FROM pg_stat_activity
        WHERE datname = $1 AND pid <> pg_backend_pid()`,
-      [DB_NAME]
+      [env.db.database]
     );
     // Drops database and user
-    await superClient.query(`DROP DATABASE IF EXISTS ${DB_NAME}`);
-    await superClient.query(`DROP USER IF EXISTS ${DB_USER}`);
+    await superClient.query(`DROP DATABASE IF EXISTS ${env.db.database}`);
+    await superClient.query(`DROP ROLE IF EXISTS ${env.db.user}`);
     // Recreates everything
-    await superClient.query(`CREATE USER ${DB_USER} WITH PASSWORD '${DB_PASSWORD}'`);
-    await superClient.query(`CREATE DATABASE ${DB_NAME} OWNER ${DB_USER}`);
+    await superClient.query(`CREATE USER ${env.db.user} WITH PASSWORD '${env.db.pass}'`);
+    await superClient.query(`CREATE DATABASE ${env.db.database} OWNER ${env.db.user}`);
     await superClient.end();
     await dbClient.connect();
     await runSqlFile(dbClient, 'db.sql');
