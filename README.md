@@ -16,6 +16,7 @@
 
 ## Example cURL
 ```bash
+# USERS
 # Make user
 curl -s -X POST http://localhost:3000/users \
   -H 'Content-Type: application/json' \
@@ -32,6 +33,38 @@ curl -s http://localhost:3000/users/1 | jq
 
 # Delete user
 curl -X DELETE http://localhost:3000/users/1
+
+# TEAMS
+# Create a team
+curl -s -X POST http://localhost:3000/teams \
+  -H 'Content-Type: application/json' \
+  -d '{"owner_id":"<user_id>","name":"<team_name>"}' | jq
+
+# Get all teams for a user
+curl -s "http://localhost:3000/teams/user/<user_id>" | jq
+
+# Get team details (members included)
+curl -s "http://localhost:3000/teams/<team_id>/details?user_id=<user_id>" | jq
+
+# Update team name
+curl -s -X PATCH http://localhost:3000/teams/<team_id> \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"New Team Name","user_id":"<user_id>"}' | jq
+
+# Add user to a team
+curl -s -X POST http://localhost:3000/teams/<team_id>/members \
+  -H 'Content-Type: application/json' \
+  -d '{"userToAddId":"<user_id_to_add>","requestingUserId":"<owner_user_id>","role":"user"}' | jq
+
+# Remove user from a team
+curl -s -X DELETE http://localhost:3000/teams/<team_id>/members/<user_id>?performed_by=<owner_user_id> | jq
+
+# Get team members
+curl -s "http://localhost:3000/teams/<team_id>/members?user_id=<requesting_user_id>" | jq
+
+# Get team tasks
+curl -s "http://localhost:3000/teams/<team_id>/tasks?user_id=<requesting_user_id>" | jq
+
 ```
 ## PostgreSQL
 ```

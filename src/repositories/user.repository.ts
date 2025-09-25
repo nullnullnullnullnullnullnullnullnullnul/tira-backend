@@ -1,5 +1,5 @@
 import pool from '../db';
-import {User, UserRole, validRoles} from '../models/user';
+import { User } from '../models/user';
 
 export async function listAllUsers(filterName?: string): Promise<User[]> {
   const result = filterName

@@ -1,7 +1,6 @@
 import { ulid } from 'ulid';
 import bcrypt from "bcrypt";
 import * as userRepository from '../repositories/user.repository';
-import pool from "../db";
 import { User, UserRole, validRoles } from '../models/user';
 
 const SALT = 10;
@@ -18,7 +17,7 @@ export async function listAllUsers(filterName?: string): Promise<Omit<User, 'pwd
 // Searchs user with exact id
 export async function getUserById(id: string): Promise<Omit<User, 'pwd_hash'> | null> {
   const user = await userRepository.getUserById(id);
-  if(!user) return null;
+  if (!user) return null;
   const { pwd_hash, ...safe } = user;
   return safe;
 }

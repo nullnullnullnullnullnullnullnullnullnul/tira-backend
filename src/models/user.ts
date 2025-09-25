@@ -3,7 +3,7 @@ export type User = {
   username: string;
   email: string;
   role: UserRole;
-  created_at: string; // En JSON normalmente se mandan ISO Strings (.toISOString())
+  created_at: string; // JSON will use ISOStrings (.toISOString())
   last_login: string | null; // Ej: "2025-09-07T18:00:00"
   pwd_hash: string
 }
