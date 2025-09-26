@@ -22,7 +22,14 @@ export async function getUserById(id: string): Promise<Omit<User, 'pwd_hash'> | 
   return safe;
 }
 
-export async function insertUser(input: { username: string; email: string; role: string; password: string }): Promise<User | null> {
+export async function insertUser(
+  input:
+    {
+      username: string;
+      email: string;
+      role: string;
+      password: string
+    }): Promise<User | null> {
   if (!isValidRole(input.role)) return null;
   const pwd_hash = await bcrypt.hash(input.password, SALT);
   const newUser: User = {
