@@ -27,6 +27,17 @@ export async function insertUser(user: User): Promise<User> {
   return result.rows[0];
 }
 
+// Updates username
+export async function updateUsername(name: string, user_id: string): Promise<User> {
+  const result = await pool.query(
+    `UPDATE users
+    SET username = $1
+    WHERE user_id = $2
+    RETURNING *`,
+    [name, user_id]);
+  return result.rows[0];
+}
+
 export async function deleteUser(id: string): Promise<boolean> {
   const result = await pool.query("DELETE FROM users WHERE user_id = $1", [id]);
   return (result.rowCount ?? 0) > 0;

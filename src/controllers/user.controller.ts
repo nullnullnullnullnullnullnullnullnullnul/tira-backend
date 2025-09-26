@@ -61,3 +61,15 @@ export async function deleteUser(req: Request, res: Response) {
     });
   }
 }
+
+// PATCH /users/:user_id/username
+export async function updateUsername(req: Request, res: Response) {
+  try {
+    const { user_id } = req.params;
+    const { name } = req.body;
+    const updatedUser = await userService.updateUsername(name, user_id as string);
+    res.json(updatedUser);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+}

@@ -40,3 +40,11 @@ export async function insertUser(input: { username: string; email: string; role:
 export async function deleteUser(id: string): Promise<boolean> {
   return userRepository.deleteUser(id);
 }
+
+// Update username
+export async function updateUsername(name: string, user_id: string): Promise<User> {
+  if (!name.trim()) throw new Error('Username cannot be empty');
+  const user = await userRepository.getUserById(user_id);
+  if (!user) throw new Error('Username not found');
+  return await userRepository.updateUsername(name, user_id);
+}

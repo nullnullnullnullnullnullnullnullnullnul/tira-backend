@@ -8,5 +8,5 @@ router.get("/", userController.listUsers);
 router.get("/:id", userController.getUser);
 router.post("/", requireFields(["username", "email", "role"]), userController.createUser);
 router.delete("/:id", userController.deleteUser);
-
+router.patch("/:user_id/username", requireFields(["name"]), userController.updateUsername);
 export default router;

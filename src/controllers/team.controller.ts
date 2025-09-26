@@ -94,3 +94,17 @@ export async function deleteTeam(req: Request, res: Response) {
     res.status(400).json({ error: err.message });
   }
 }
+
+// PATCH /users/:user_id/username
+export async function updateUsername(req: Request, res: Response) {
+  try {
+    const { user_id } = req.params;
+    const { name } = req.body;
+
+    const updatedUser = await userService.updateUsername(name, user_id);
+
+    res.json(updatedUser);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+}

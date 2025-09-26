@@ -6,8 +6,8 @@ info:
 servers:
   - url: http://localhost:3000
     description: Api service for Tira implementation
-
 paths:
+# === users ===
   /users:
     get:
       summary: List all users
@@ -63,6 +63,42 @@ paths:
       responses:
         '204':
           description: User deleted successfully
+
+  /users/{user_id}/username:
+    patch:
+      summary: Update a user's username
+      description: Updates the username of a specific user.
+      tags:
+        - Users
+      parameters:
+        - name: user_id
+          in: path
+          description: ID of the user to update
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: New username
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: "New username"
+              required:
+                - username
+      responses:
+        '200':
+          description: User successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+# === TEAMS ===
 
   /teams:
     post:
