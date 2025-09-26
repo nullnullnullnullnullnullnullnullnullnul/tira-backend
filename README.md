@@ -2,20 +2,22 @@
 - express
 - pg
 - dotenv
+- cors
+- ulid
+- swagger-ui-express
+
 ## Dependencies dev
 - typescript 
 - ts-node
+- ts-node-dev
 - @types/node
 - @types/express
 - jest
 - ts-jest
 - @types/jest
-- cross-env
-- ts-node-dev
-- ulid
-- swagger-ui-express
-- swagger-js-doc
 - @types/swagger-ui-express
+- cross-env
+- swagger-js-doc
 
 ## Example cURL
 ### Users
