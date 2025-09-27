@@ -42,8 +42,12 @@ CREATE TABLE users(
 -- tags
 CREATE TABLE tags(
   tag_id        CHAR(26) PRIMARY KEY,
+  team_id       CHAR(26),
   name          VARCHAR(20) NOT NULL,
-  CONSTRAINT tags_name_uq UNIQUE(name)
+  CONSTRAINT tags_team_id_fk FOREIGN KEY (team_id)
+    REFERENCES teams(team_id)
+    ON DELETE CASCADE
+  CONSTRAINT tags_team_name_uq UNIQUE(team_id, name)
 );
 
 -- teams
@@ -151,9 +155,9 @@ CREATE TABLE comments(
 -- ====================================
 -- For better performance on frequent queries
 -- CREATE INDEX users_username_idx ON users(username); -> psql creates indexes for unique constraint
-CREATE INDEX tasks_team_idx ON tasks(team_id);
-CREATE INDEX tasks_assigned_to_idx ON tasks(assigned_to);
-CREATE INDEX comments_task_idx ON comments(task_id);
+-- CREATE INDEX tasks_team_idx ON tasks(team_id);
+-- CREATE INDEX tasks_assigned_to_idx ON tasks(assigned_to);
+-- CREATE INDEX comments_task_idx ON comments(task_id);
 
 
 -- ====================================
