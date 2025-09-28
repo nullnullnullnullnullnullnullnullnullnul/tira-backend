@@ -4,9 +4,21 @@ import { requireFields } from "../validators/requireFields";
 
 const router = Router();
 
-router.get("/", userController.listUsers);
-router.get("/:id", userController.getUser);
-router.post("/", requireFields(["username", "email", "role"]), userController.createUser);
-router.delete("/:id", userController.deleteUser);
-router.patch("/:user_id/username", requireFields(["name"]), userController.updateUsername);
+// List users with optional filters
+// GET /users?username=&email=&role=&id=&offset=&limit=
+router.get('/', userController.listUsers);
+
+// Create a new user - POST /users
+router.post(
+  '/',
+  requireFields(['username', 'email', 'role', 'password']),
+  userController.createUser
+);
+
+// Delete user - DELETE /users/:user_id
+router.delete('/:id', userController.deleteUser);
+
+// Update user (username, email, password) - PATCH /users/:user_id
+router.patch('/:id', userController.updateUser);
+
 export default router;

@@ -7,19 +7,55 @@ info:
     description: Operations about users
   - name: Teams
     description: Operations about teams
-
   description: API REST for users and teams using PostgreSQL
 servers:
   - url: http://localhost:3000
     description: Api service for Tira implementation
 paths:
+
+# =============
 # === USERS ===
+
   /users:
     get:
-      summary: List all users
+      summary: List users with optional filters
       tags:
         - Users
-      description: Lists all user records
+      description: Lists all users, optionally filtered by username, email, role, or id, with pagination.
+      parameters:
+        - in: query
+          name: username
+          schema:
+            type: string
+          description: Filter by username
+        - in: query
+          name: email
+          schema:
+            type: string
+          description: Filter by email
+        - in: query
+          name: role
+          schema:
+            type: string
+            enum: [user, leader]
+          description: Filter by role
+        - in: query
+          name: id
+          schema:
+            type: string
+          description: Filter by user ID
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+          description: Number of records to skip
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+          description: Maximum number of records to return
       responses:
         '200':
           description: Array of users
@@ -29,6 +65,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/User'
+
     post:
       summary: Create a new user
       tags:
@@ -48,23 +85,6 @@ paths:
                 $ref: '#/components/schemas/User'
 
   /users/{id}:
-    get:
-      summary: Get a user by ID
-      tags:
-        - Users
-      parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
-      responses:
-        '200':
-          description: User object
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
     delete:
       summary: Delete a user by ID
       tags:
@@ -75,25 +95,24 @@ paths:
           schema:
             type: string
           required: true
+          description: ID of the user to delete
       responses:
         '204':
           description: User deleted successfully
 
-  /users/{user_id}/username:
     patch:
-      summary: Update a user's username
-      description: Updates the username of a specific user.
+      summary: Update a user
+      description: Updates a user's username, email, or password.
       tags:
         - Users
       parameters:
-        - name: user_id
-          in: path
-          description: ID of the user to update
+        - in: path
+          name: id
           required: true
           schema:
             type: string
+          description: ID of the user to update
       requestBody:
-        description: New username
         required: true
         content:
           application/json:
@@ -102,9 +121,13 @@ paths:
               properties:
                 username:
                   type: string
-                  example: "New username"
-              required:
-                - username
+                  example: "newUsername"
+                email:
+                  type: string
+                  example: "new@example.com"
+                password:
+                  type: string
+                  example: "NewP@ssw0rd"
       responses:
         '200':
           description: User successfully updated
@@ -113,6 +136,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/User'
 
+# =============
 # === TEAMS ===
 
   /teams:
@@ -195,19 +219,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Team'
-    delete:
-      summary: Delete a team
-      tags:
-        - Teams
-      parameters:
-        - in: path
-          name: team_id
-          schema:
-            type: string
-          required: true
-      responses:
-        '204':
-          description: Team deleted
 
   /teams/{team_id}/members:
     get:
@@ -321,6 +332,9 @@ paths:
                 items:
                   $ref: '#/components/schemas/TeamTask'
 
+# ==================
+# === COMPONENTS ===
+
 components:
   schemas:
     User:
@@ -334,10 +348,13 @@ components:
           type: string
         role:
           type: string
+          enum: [leader, user]
         created_at:
           type: string
+          format: date-time
         last_login:
           type: string
+          format: date-time
           nullable: true
 
     UserInput:
@@ -354,8 +371,21 @@ components:
           type: string
         role:
           type: string
+          enum: [leader, user]
         password:
           type: string
+
+    UserUpdate:
+      type: object
+      description: Fields to update for a user
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+
 
     Team:
       type: object

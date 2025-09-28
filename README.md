@@ -97,20 +97,55 @@ psql -h 127.0.0.1 -p 5432 -U <user> -d <db_name> -f <schema_file>.sql
 
 ### Users
 ```bash
-# Create a user, role must be "user" or "leader"
-curl -s -X POST http://localhost:3000/users   -H 'Content-Type: application/json'   -d '{"username":"","email":"","role":"","password":""}' | jq
-
 # Get all users
-curl -s http://localhost:3000/users | jq
+# Optional filters by username, email, role, id
+# Pagination with offset and limit
+curl -X 'GET' \
+  'http://localhost:3000/users?username=&email=&role=&id=&offset=&limit=' \
+  -H 'accept: application/json'
 
-# Search by name
-curl -s http://localhost:3000/users?name=<username> | jq
-
-# Get by ID
-curl -s http://localhost:3000/users/<id> | jq
+# Create a user:
+# Role must be:
+# - user
+# - leader
+# Usernames must be:
+# - Between 3 and 16 characters long (included)
+# - Only letters and numbers allowed
+# Emails:
+# - In local part allows alphanumeric characters and '._%+-'
+# - Allows multiple subdomains in the domain part (any.edu.ar)
+# - Each domain label need to start/end with a letter/number
+# - Top-level domains should be atleast 2 characters long
+# Passwords:
+# - Between 8 and 16 characters long
+# - Atleast 1 number
+# - Atleast 1 uppercase letter
+# - Atleast 1 lowercase letter
+# - Atleast 1 special character (any non-alphanumeric)
+curl -X 'POST' \
+  'http://localhost:3000/users' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "username": "",
+  "email": "",
+  "role": "",
+  "password": ""
+}'
 
 # Delete user
-curl -X DELETE http://localhost:3000/users/<id>
+curl -X DELETE http://localhost:3000/users/<id> -H 'accept: */*'
+
+# Update username
+curl -X 'PATCH' \
+  'http://localhost:3000/users/<id>' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "username": "",
+  "email": "",
+  "password": ""
+}'
 ```
 
 ### Teams
@@ -121,11 +156,11 @@ curl -s -X POST http://localhost:3000/teams   -H 'Content-Type: application/json
 # Get all teams for a user
 curl -s http://localhost:3000/teams/user/<user_id> | jq
 
-# Get team details (with members)
-curl -s http://localhost:3000/teams/<team_id>/details/<user_id> | jq
-
 # Update team name
 curl -s -X PATCH http://localhost:3000/teams/<team_id>   -H 'Content-Type: application/json'   -d '{"name":"New Team Name","user_id":"<user_id>"}' | jq
+
+# Get team members
+curl -s http://localhost:3000/teams/<team_id>/members?user_id=<requesting_user_id> | jq
 
 # Add a user to a team
 curl -s -X POST http://localhost:3000/teams/<team_id>/members   -H 'Content-Type: application/json'   -d '{"userToAddId":"<user_id_to_add>","requestingUserId":"<owner_user_id>","role":"user"}' | jq
@@ -133,8 +168,6 @@ curl -s -X POST http://localhost:3000/teams/<team_id>/members   -H 'Content-Type
 # Remove a user from a team
 curl -s -X DELETE http://localhost:3000/teams/<team_id>/members/<user_id>?performed_by=<owner_user_id> | jq
 
-# Get team members
-curl -s http://localhost:3000/teams/<team_id>/members?user_id=<requesting_user_id> | jq
 
 # Get team tasks
 curl -s http://localhost:3000/teams/<team_id>/tasks?user_id=<requesting_user_id> | jq
@@ -157,3 +190,4 @@ curl -s http://localhost:3000/teams/<team_id>/tasks?user_id=<requesting_user_id>
 - Implementing history table GET, DELETE routes
 - Add authentication & authorization
 - Add integration tests
+- Delete a team
