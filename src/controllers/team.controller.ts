@@ -13,7 +13,7 @@ export async function createTeam(req: Request, res: Response) {
   }
 }
 
-// GET /users/:user_id/teams
+// GET /teams/users/<user_id>
 export async function getUserTeams(req: Request, res: Response) {
   try {
     const { user_id } = req.params;
@@ -24,7 +24,7 @@ export async function getUserTeams(req: Request, res: Response) {
   }
 }
 
-// PATCH /teams/:team_id
+// PATCH /teams/<team_id>
 export async function updateTeamName(req: Request, res: Response) {
   try {
     const { team_id } = req.params;
@@ -36,7 +36,7 @@ export async function updateTeamName(req: Request, res: Response) {
   }
 }
 
-// POST /teams/:team_id/members
+// POST /teams/<team_id>/members
 export async function addUserToTeam(req: Request, res: Response) {
   try {
     const { team_id } = req.params;
@@ -48,7 +48,14 @@ export async function addUserToTeam(req: Request, res: Response) {
   }
 }
 
-// DELETE /teams/:team_id/members/:user_id
+// DELETE /teams/<team_id>/members/<user_id>
+/**
+ * Delete members of a team.
+ * 
+ * @route DELETE /teams/
+ * @param req 
+ * @param res 
+ */
 export async function removeUserFromTeam(req: Request, res: Response) {
   try {
     const { team_id, user_id, performed_by } = req.params; // <-- usar params
@@ -59,7 +66,15 @@ export async function removeUserFromTeam(req: Request, res: Response) {
   }
 }
 
-// GET /teams/:team_id/members?user_id=
+/**
+ * Get members of a team.
+ *
+ * @route GET /teams/<team_id>/members?user_id=
+ * @param req.params.team_id - ID of the team
+ * @param req.query.user_id - Optional user ID to filter the results
+ * @returns JSON array of team members
+ * @throws 400 if input is invalid
+ */
 export async function getTeamMembers(req: Request, res: Response) {
   try {
     const { team_id } = req.params;
@@ -90,20 +105,6 @@ export async function deleteTeam(req: Request, res: Response) {
     const { user_id } = req.body; // el owner que intenta eliminar
     const result = await teamService.deleteTeam(team_id as string, user_id as string);
     res.json({ success: result });
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
-  }
-}
-
-// PATCH /users/:user_id/username
-export async function updateUsername(req: Request, res: Response) {
-  try {
-    const { user_id } = req.params;
-    const { name } = req.body;
-
-    const updatedUser = await userService.updateUsername(name, user_id);
-
-    res.json(updatedUser);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }

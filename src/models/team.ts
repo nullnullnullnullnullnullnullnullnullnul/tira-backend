@@ -1,6 +1,6 @@
 import { UserRole } from '../models/user';
-export type TaskStatus = 'pending' | 'ongoing' | 'done' | 'canceled';
-export type TaskPriority = 'high' | 'medium' | 'low';
+import { TaskPriority, TaskStatus } from './task';
+
 
 export type Team = {
   team_id: string;
