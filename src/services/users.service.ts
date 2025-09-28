@@ -42,6 +42,7 @@ function isValidPassword(pwd: string): boolean {
 }
 
 // Lists all users, filters by username, id, email, role
+// todo: validate permission to view all user data
 export async function listUsers(
   filter: UserFilter = {},
   offset: number = 0,
@@ -78,6 +79,7 @@ export async function insertUser(
 }
 
 // Deletes user
+// todo: validate permission to delete user's data
 export async function deleteUser(user_id: string): Promise<boolean> {
   const user: Omit<User, "pwd_hash">[] = await listUsers({ id: user_id }, 0, 1);
   if (user.length === 0) throw new Error('User not found');
@@ -85,6 +87,7 @@ export async function deleteUser(user_id: string): Promise<boolean> {
 }
 
 // Update username
+// todo: validate permission to update user's data
 export async function updateUser(
   user_id: string,
   fields: { username?: string; email?: string, password?: string; }
