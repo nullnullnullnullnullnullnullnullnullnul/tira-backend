@@ -39,17 +39,6 @@ CREATE TABLE users(
   CONSTRAINT users_email_uq UNIQUE(email)
 );
 
--- tags
-CREATE TABLE tags(
-  tag_id        CHAR(26) PRIMARY KEY,
-  team_id       CHAR(26),
-  name          VARCHAR(20) NOT NULL,
-  CONSTRAINT tags_team_id_fk FOREIGN KEY (team_id)
-    REFERENCES teams(team_id)
-    ON DELETE CASCADE
-  CONSTRAINT tags_team_name_uq UNIQUE(team_id, name)
-);
-
 -- teams
 CREATE TABLE teams(
   team_id       CHAR(26) PRIMARY KEY,
@@ -62,6 +51,17 @@ CREATE TABLE teams(
     ON UPDATE CASCADE,
     -- removes/update on user_id update
   CONSTRAINT name_uq UNIQUE(name, owner_id) -- name + owner_id 
+);
+
+-- tags
+CREATE TABLE tags(
+  tag_id        CHAR(26) PRIMARY KEY,
+  team_id       CHAR(26) NOT NULL,
+  name          VARCHAR(20) NOT NULL,
+  CONSTRAINT tags_team_id_fk FOREIGN KEY (team_id)
+    REFERENCES teams(team_id)
+    ON DELETE CASCADE,
+  CONSTRAINT tags_team_name_uq UNIQUE(team_id, name)
 );
 
 -- team members
@@ -116,7 +116,8 @@ CREATE TABLE task_tags(
     ON DELETE CASCADE,
   CONSTRAINT task_tags_tag_id_fk FOREIGN KEY (tag_id)
     REFERENCES tags(tag_id)
-    ON DELETE CASCADE
+    ON DELETE CASCADE,
+  CONSTRAINT task_tags_uq UNIQUE (task_id, tag_id)
 );
 
 -- task status history
