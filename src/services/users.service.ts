@@ -3,12 +3,13 @@ import bcrypt from "bcrypt";
 import * as userRepository from '../repositories/user.repository';
 import { User, UserRole, validRoles, UserFilter } from '../models/user';
 
-const SALT = 10;
+const SALT: number = 10;
+export type UserSafe = Omit<User, 'pwd_hash'>;
 
 // HELPERS
-const usernameRegex = /^[a-z0-9]{3,16}$/i;
-const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
-const passwordRegex = /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,16}$/;
+const usernameRegex: RegExp = /^[a-z0-9]{3,16}$/i;
+const emailRegex: RegExp = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
+const passwordRegex: RegExp = /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,16}$/;
 
 // Role can be 'leader' or 'user' only
 function isValidRole(role: string): role is UserRole {
@@ -47,8 +48,8 @@ export async function listUsers(
   filter: UserFilter = {},
   offset: number = 0,
   limit: number = 20
-): Promise<Omit<User, 'pwd_hash'>[]> {
-  const users = await userRepository.selectUsers(filter, offset, limit);
+): Promise<UserSafe[]> {
+  const users: User[] = await userRepository.selectUsers(filter, offset, limit);
   return users.map(({ pwd_hash, ...safe }) => safe);
 }
 
@@ -60,12 +61,13 @@ export async function insertUser(
       email: string;
       role: string;
       password: string
-    }): Promise<User | null> {
+    }
+): Promise<UserSafe> {
   if (!isValidRole(fields.role)) throw new Error('Invalid role');
   if (!isValidUsername(fields.username)) throw new Error('Invalid username');
   if (!isValidEmail(fields.email)) throw new Error('Invalid email address');
   if (!isValidPassword(fields.password)) throw new Error('Invalid password');
-  const pwd_hash = await bcrypt.hash(fields.password, SALT);
+  const pwd_hash: string = await bcrypt.hash(fields.password, SALT);
   const newUser: User = {
     user_id: ulid(),
     username: fields.username,
@@ -75,15 +77,20 @@ export async function insertUser(
     last_login: null,
     pwd_hash: pwd_hash
   }
-  return await userRepository.insertUser(newUser);
+  const inserted: User = await userRepository.insertUser(newUser);
+  if (!inserted) throw new Error('Failed to create user');
+  const { pwd_hash: _, ...safe } = inserted;
+  return safe;
 }
 
 // Deletes user
 // todo: validate permission to delete user's data
 export async function deleteUser(user_id: string): Promise<boolean> {
-  const user: Omit<User, "pwd_hash">[] = await listUsers({ id: user_id }, 0, 1);
-  if (user.length === 0) throw new Error('User not found');
-  return userRepository.deleteUser(user_id);
+  const user: UserSafe | undefined = (await listUsers({ id: user_id }, 0, 1))[0];
+  if (!user) throw new Error('User not found');
+  const deleted: boolean = await userRepository.deleteUser(user_id);
+  if (!deleted) throw new Error('Failed to delete user');
+  return deleted;
 }
 
 // Update username
@@ -91,11 +98,11 @@ export async function deleteUser(user_id: string): Promise<boolean> {
 export async function updateUser(
   user_id: string,
   fields: { username?: string; email?: string, password?: string; }
-): Promise<Omit<User, 'pwd_hash'> | null> {
+): Promise<UserSafe> {
   if (!fields) throw new Error('No fields given to update');
   // Checks user existence
-  const user = await userRepository.selectUsers({ id: user_id }, 0, 1);
-  if (user.length === 0) throw new Error('User not found');
+  const user: UserSafe | undefined = (await userRepository.selectUsers({ id: user_id }, 0, 1))[0];
+  if (!user) throw new Error('User not found');
   const updates: Partial<User> = {};
   if (fields.username) {
     if (!isValidUsername(fields.username)) throw new Error('Invalid username format');
@@ -109,6 +116,8 @@ export async function updateUser(
     if (!isValidPassword(fields.password)) throw new Error('Invalid password');
     updates.pwd_hash = await bcrypt.hash(fields.password, SALT);
   }
-  const updatedUser = await userRepository.updateUser(user_id, updates);
-  return updatedUser ? (({ pwd_hash, ...safe }) => safe)(updatedUser) : null;
+  const updatedUser: User | null = await userRepository.updateUser(user_id, updates);
+  if (!updatedUser) throw new Error('Failed to update user data');
+  const { pwd_hash: _, ...safe } = updatedUser;
+  return safe;
 }

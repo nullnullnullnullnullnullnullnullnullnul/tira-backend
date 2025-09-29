@@ -35,7 +35,7 @@ export async function selectUsers(
     values.push(filter.email);
     conditions.push(`email = $${values.length}`);
   }
-  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  const where: string = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   values.push(limit, offset);
   const result = await pool.query(`
     SELECT *
@@ -81,9 +81,9 @@ export async function updateUser(
 ): Promise<User | null> {
   const keys = Object.keys(fields) as (keyof typeof fields)[];
   // keys = ["username", "email", "pwd_hash"]
-  const set = keys.map((k, i) => `${k} = $${i + 1}`);
+  const set= keys.map((k, i) => `${k} = $${i + 1}`);
   // set = ["username = $1", "email = $2", "pwd_hash = $3"]
-  const values = keys.map(k => fields[k]);
+  const values= keys.map(k => fields[k]);
   // values = ["newUsername", "newMail@example.com", "pwdhash"]
   const result = await pool.query(`
     UPDATE users
