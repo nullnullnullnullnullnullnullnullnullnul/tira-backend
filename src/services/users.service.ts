@@ -86,7 +86,7 @@ export async function insertUser(
 // Deletes user
 // todo: validate permission to delete user's data
 export async function deleteUser(user_id: string): Promise<boolean> {
-  const user: UserSafe | undefined = (await listUsers({ id: user_id }, 0, 1))[0];
+  const user: UserSafe | undefined = (await listUsers({ user_id: user_id }, 0, 1))[0];
   if (!user) throw new Error('User not found');
   const deleted: boolean = await userRepository.deleteUser(user_id);
   if (!deleted) throw new Error('Failed to delete user');
@@ -101,7 +101,7 @@ export async function updateUser(
 ): Promise<UserSafe> {
   if (!fields) throw new Error('No fields given to update');
   // Checks user existence
-  const user: UserSafe | undefined = (await userRepository.selectUsers({ id: user_id }, 0, 1))[0];
+  const user: UserSafe | undefined = (await userRepository.selectUsers({ user_id: user_id }, 0, 1))[0];
   if (!user) throw new Error('User not found');
   const updates: Partial<User> = {};
   if (fields.username) {

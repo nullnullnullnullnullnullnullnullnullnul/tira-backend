@@ -2,19 +2,16 @@ openapi: 3.0.1
 info:
   title: Tira API Rest
   version: 1.0.0
-  tags:
-  - name: Users
-    description: Operations about users
-  - name: Teams
-    description: Operations about teams
   description: API REST for users and teams using PostgreSQL
 servers:
   - url: http://localhost:3000
     description: Api service for Tira implementation
 paths:
 
+
 # =============
 # === USERS ===
+
 
   /users:
     get:
@@ -37,7 +34,7 @@ paths:
           name: role
           schema:
             type: string
-            enum: [user, leader]
+            enum: [leader, user]
           description: Filter by role
         - in: query
           name: user_id
@@ -62,10 +59,13 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/User'
-
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+    
     post:
       summary: Create a new user
       tags:
@@ -75,10 +75,30 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserInput'
+              type: object
+              required:
+                - username
+                - email
+                - role
+                - password
+              properties:
+                username:
+                  type: string
+                  example: "john_doe"
+                email:
+                  type: string
+                  format: email
+                  example: "john@example.com"
+                role:
+                  type: string
+                  enum: [leader, user]
+                  example: "user"
+                password:
+                  type: string
+                  example: "MyS3cretP@ss"
       responses:
         '201':
-          description: Created user
+          description: User created
           content:
             application/json:
               schema:
@@ -99,6 +119,16 @@ paths:
       responses:
         '204':
           description: User deleted successfully
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "User not found"
 
     patch:
       summary: Update a user
@@ -124,6 +154,7 @@ paths:
                   example: "newUsername"
                 email:
                   type: string
+                  format: email
                   example: "new@example.com"
                 password:
                   type: string
@@ -135,9 +166,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
+        '400':
+          description: No fields provided or invalid data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No fields provided to update"
+
 
 # =============
 # === TEAMS ===
+
 
   /teams:
     post:
@@ -156,8 +199,10 @@ paths:
               properties:
                 owner_id:
                   type: string
+                  example: "u123"
                 name:
                   type: string
+                  example: "Marketing Team"
       responses:
         '201':
           description: Team created
@@ -165,18 +210,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Team'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid input"
 
   /teams/user/{user_id}:
     get:
-      summary: Get all teams for a user
+      summary: Get all teams a user is in
       tags:
         - Teams
       parameters:
         - in: path
           name: user_id
+          required: true
           schema:
             type: string
-          required: true
+            example: "u123"
       responses:
         '200':
           description: Array of teams
@@ -186,18 +242,29 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Team'
+        '400':
+          description: User not found or invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "User not found"
 
   /teams/{team_id}:
     patch:
-      summary: Update team name
+      summary: Update a team name
       tags:
         - Teams
       parameters:
         - in: path
           name: team_id
+          required: true
           schema:
             type: string
-          required: true
+            example: "t123"
       requestBody:
         required: true
         content:
@@ -206,12 +273,10 @@ paths:
               type: object
               required:
                 - name
-                - user_id
               properties:
                 name:
                   type: string
-                user_id:
-                  type: string
+                  example: "New Team Name"
       responses:
         '200':
           description: Team updated
@@ -219,32 +284,82 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Team'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid input"
 
-  /teams/{team_id}/members:
-    get:
-      summary: List members of a team
+    delete:
+      summary: Delete a team
       tags:
         - Teams
       parameters:
         - in: path
           name: team_id
+          required: true
           schema:
             type: string
-          required: true
-        - in: query
-          name: user_id
-          schema:
-            type: string
-          required: true
+            example: "t123"
       responses:
         '200':
-          description: Array of team members
+          description: Team deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '404':
+          description: Team not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Team not found"
+
+  /teams/{team_id}/members:
+    get:
+      summary: List all members of a team
+      tags:
+        - Teams
+      parameters:
+        - in: path
+          name: team_id
+          required: true
+          schema:
+            type: string
+            example: "t123"
+      responses:
+        '200':
+          description: Array of users
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/TeamMember'
+                  $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid team_id
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid team ID"
+
     post:
       summary: Add a user to a team
       tags:
@@ -252,9 +367,10 @@ paths:
       parameters:
         - in: path
           name: team_id
+          required: true
           schema:
             type: string
-          required: true
+            example: "t123"
       requestBody:
         required: true
         content:
@@ -262,17 +378,11 @@ paths:
             schema:
               type: object
               required:
-                - userToAddId
-                - requestingUserId
-                - role
+                - user_id
               properties:
-                userToAddId:
+                user_id:
                   type: string
-                requestingUserId:
-                  type: string
-                role:
-                  type: string
-                  enum: [leader, user]
+                  example: "u123"
       responses:
         '201':
           description: User added to team
@@ -280,6 +390,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TeamMember'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid input"
 
   /teams/{team_id}/members/{user_id}:
     delete:
@@ -289,167 +409,158 @@ paths:
       parameters:
         - in: path
           name: team_id
+          required: true
           schema:
             type: string
-          required: true
+            example: "t123"
         - in: path
           name: user_id
+          required: true
           schema:
             type: string
-          required: true
-        - in: query
-          name: performed_by
-          schema:
-            type: string
-          required: true
+            example: "u123"
       responses:
         '204':
-          description: User removed from team
-
-  /teams/{team_id}/tasks:
-    get:
-      summary: Get tasks of a team
-      tags:
-        - Teams
-      parameters:
-        - in: path
-          name: team_id
-          schema:
-            type: string
-          required: true
-        - in: query
-          name: user_id
-          schema:
-            type: string
-          required: true
-      responses:
-        '200':
-          description: Array of tasks
+          description: User removed successfully (no content)
+        '404':
+          description: Member not found
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/TeamTask'
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Member not found"
 
 # ==================
 # === COMPONENTS ===
+
 
 components:
   schemas:
     User:
       type: object
+      required:
+        - user_id
+        - username
+        - email
+        - role
+        - created_at
+        - pwd_hash
       properties:
         user_id:
           type: string
+          example: "u123"
         username:
           type: string
+          example: "john_doe"
         email:
           type: string
+          format: email
+          example: "john@example.com"
         role:
           type: string
-          enum: [leader, user]
+          enum:
+            - leader
+            - user
+          example: "user"
         created_at:
           type: string
           format: date-time
+          example: "2025-09-29T12:34:56Z"
         last_login:
           type: string
           format: date-time
           nullable: true
+          example: null
+        pwd_hash:
+          type: string
+          example: "$2b$10$abcdefghijklmnopqrstuv"
 
-    UserInput:
+    UserFilter:
       type: object
-      required:
-        - username
-        - email
-        - role
-        - password
       properties:
+        user_id:
+          type: string
+          example: "u123"
         username:
           type: string
+          example: "john_doe"
         email:
           type: string
+          format: email
+          example: "john@example.com"
         role:
           type: string
-          enum: [leader, user]
-        password:
-          type: string
-
-    UserUpdate:
-      type: object
-      description: Fields to update for a user
-      properties:
-        username:
-          type: string
-        email:
-          type: string
-        password:
-          type: string
-
+          enum:
+            - leader
+            - user
+          example: "user"
 
     Team:
       type: object
+      required:
+        - team_id
+        - owner_id
+        - name
+        - created_at
       properties:
         team_id:
           type: string
+          example: "t123"
         owner_id:
           type: string
+          example: "u123"
         name:
           type: string
+          example: "Marketing Team"
         created_at:
           type: string
-
-    TeamRow:
-      type: object
-      properties:
-        team_id:
-          type: string
-        name:
-          type: string
-        owner_id:
-          type: string
-        member_user_id:
-          type: string
-          nullable: true
-        member_role:
-          type: string
-          nullable: true
-        member_invited_at:
-          type: string
-          nullable: true
-        member_joined_at:
-          type: string
-          nullable: true
+          format: date-time
+          example: "2025-09-29T12:34:56Z"
 
     TeamMember:
       type: object
+      required:
+        - team_members_id
+        - team_id
+        - user_id
+        - role
       properties:
         team_members_id:
           type: string
+          example: "tm123"
         team_id:
           type: string
+          example: "t123"
         user_id:
           type: string
+          example: "u123"
         role:
           type: string
+          enum: [leader, user]
+          example: "user"
         invited_at:
           type: string
+          format: date-time
+          nullable: true
+          example: "2025-09-29T13:00:00Z"
         joined_at:
           type: string
+          format: date-time
+          nullable: true
+          example: "2025-09-29T13:15:00Z"
 
-    TeamTask:
+    TeamFilter:
       type: object
       properties:
-        task_id:
+        id:
           type: string
-        team_id:
+          example: "t123"
+        owner_id:
           type: string
-        title:
+          example: "u123"
+        name:
           type: string
-        description:
-          type: string
-        created_at:
-          type: string
-        due_date:
-          type: string
-          nullable: true
+          example: "Marketing Team"

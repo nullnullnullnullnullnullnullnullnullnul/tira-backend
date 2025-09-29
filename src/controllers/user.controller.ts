@@ -96,12 +96,12 @@ export async function updateUser(
     const { user_id } = req.params;
     const { username, email, password } = req.body;
     const fields: UpdateUserBody = {};
-    if (Object.keys(fields).length === 0) {
-      return res.status(400).json({ error: "No fields provided to update" });
-    }
     if (username) fields.username = username;
     if (email) fields.email = email;
     if (password) fields.password = password;
+    if (Object.keys(fields).length === 0) {
+      return res.status(400).json({ error: "No fields provided to update" });
+    }
     const updatedUser: UserSafe = await userService.updateUser(user_id, fields);
     res.json(updatedUser);
   } catch (err: any) {

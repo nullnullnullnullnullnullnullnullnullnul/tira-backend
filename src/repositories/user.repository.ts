@@ -26,8 +26,8 @@ export async function selectUsers(
     conditions.push(`role = $${values.length}`);
   }
   // Filter by id
-  if (filter.id) {
-    values.push(filter.id);
+  if (filter.user_id) {
+    values.push(filter.user_id);
     conditions.push(`user_id = $${values.length}`);
   }
   // Filter by email

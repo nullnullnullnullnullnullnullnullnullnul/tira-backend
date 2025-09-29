@@ -1,124 +1,110 @@
 import { ulid } from 'ulid';
 import * as teamRepository from '../repositories/team.repository';
 import * as userRepository from '../repositories/user.repository';
-import { Team, Invite, TeamMember, TeamTask } from '../models/team';
-import { UserRole } from '../models/user';
+import { Team, Invite, TeamMember } from '../models/team';
+import { User, UserRole, validRoles } from '../models/user';
+
+const teamNameRegex = /^[A-Za-z0-9 _-]{3,50}$/;
+
+// Team name:
+// - Between 3 and 50 (inclusive) characters long
+// - only letters, numbers and " ", "-" allowed
+function isValidTeamName(name: string): boolean {
+  return teamNameRegex.test(name);
+}
 
 // Create a team
-export async function createTeam(owner_id: string, name: string): Promise<Team> {
-  if (!name.trim()) throw new Error('Team name cannot be empty');
+export async function createTeam(
+  owner_id: string,
+  fields: Omit<Team, "team_id" | "owner_id" | "created_at">
+): Promise<Team> {
+  if (!isValidTeamName(fields.name)) throw new Error('Invalid team name');
   // Checks if owner exists and has leader role
-  const owner = await userRepository.selectUsers({ id: owner_id }, 0, 1);
-  if (!owner[0]) throw new Error('User not found');
-  if (owner[0].role !== 'leader') throw new Error('Only leaders can create teams');
+  const owner = (await userRepository.selectUsers({ user_id: owner_id }, 0, 1))[0];
+  if (!owner) throw new Error('User not found');
+  if (owner.role !== 'leader') throw new Error('User lacks permissions');
   // Creates team
   const team: Team = {
     team_id: ulid(),
     owner_id,
-    name,
+    name: fields.name,
     created_at: new Date().toISOString(),
   };
   const newTeam = await teamRepository.insertTeam(team);
+  if (!newTeam) throw new Error('Error creating the team');
   // Inserts the owner as the first member of the team
-  await teamRepository.insertUserToTeam({
-    team_members_id: ulid(),
-    team_id: newTeam.team_id,
-    user_id: owner_id,
-    role: 'leader',
-    invited_at: new Date().toISOString(),
-    joined_at: new Date().toISOString(),
-  });
+  await addUserToTeam(team.team_id, owner_id);
   return newTeam;
 }
 
 // Get all groups a user belongs to 
+// todo: validate permission to view all groups a user belongs to
 export async function getUserTeams(user_id: string): Promise<Team[]> {
-  return await teamRepository.selectTeamsByUserId(user_id);
+  return await teamRepository.selectTeamsByUser(user_id);
 }
 
 // Update team name
-export async function updateTeamName(team_id: string, name: string, user_id: string): Promise<Team> {
-  if (!name.trim()) throw new Error('Team name cannot be empty');
-  const teams = await teamRepository.selectTeamsByUserId(user_id);
-  const team = teams.find(t => t.team_id === team_id);
-  if (!team) throw new Error('Team not found or user has no access');
-  if (team.owner_id !== user_id) throw new Error('User is not the owner of the team');
-  return await teamRepository.updateTeamName(name, team_id);
+// todo: validate permission to update team data
+export async function updateTeam(
+  team_id: string,
+  fields: Partial<Omit<Team, "team_id" | "owner_id" | "created_at">>
+): Promise<Team> {
+  if (!fields.name) throw new Error('No fields to update')
+  if (!isValidTeamName(fields.name)) throw new Error('Invalid team name');
+  const team = (await teamRepository.selectTeams({ id: team_id }, 0, 1))[0];
+  if (!team) throw new Error('Team not found');
+  const updated = await teamRepository.updateTeam(team_id, fields);
+  if (!updated) throw new Error('Error updating team');
+  return updated;
 }
 
 // Add user to team
+// todo: validate permission to add user to a team
 export async function addUserToTeam(
   team_id: string,
-  userToAddId: string,
-  requestingUserId: string,
-  role: UserRole = 'user'
-): Promise<TeamMember | null> {
-  if (!['leader', 'user'].includes(role)) throw new Error('Invalid role');
-  // Team details
-  const [ownerTeam] = await teamRepository.selectTeamById(team_id);
-  if (!ownerTeam) throw new Error('Team not found');
-  // Only team leaders can add members
-  if (ownerTeam.owner_id !== requestingUserId) throw new Error('Only the owner can add members');
-  // Users exists
-  const userToAdd = await userRepository.selectUsers({ id: userToAddId }, 0, 1);
-  if (!userToAdd[0]) throw new Error('User to add not found');
+  user_id: string,
+): Promise<TeamMember> {
+  // User exists
+  const user = (await userRepository.selectUsers({ user_id: user_id }, 0, 1))[0];
+  if (!user) throw new Error('User not found');
+  if (!validRoles.includes(user.role as UserRole)) throw new Error('Invalid role');
+  // Team exists
+  const team = (await teamRepository.selectTeams({ id: team_id }, 0, 1))[0];
+  if (!team) throw new Error('Team not found');
   // User is not a member of the team
-  const teamMembers = await teamRepository.selectTeamMembers(team_id);
-  if (teamMembers.find(m => m.user_id === userToAddId)) throw new Error('User is already in the team');
+  const members = await teamRepository.selectMembers(team_id);
+  if (members.find(m => m.user_id === user_id)) throw new Error('User is already in the team');
   const invite: Invite = {
     team_members_id: ulid(),
     team_id,
-    user_id: userToAddId,
-    role,
+    user_id,
+    role: user.role,
     invited_at: new Date().toISOString(),
     joined_at: new Date().toISOString(),
   };
-  return await teamRepository.insertUserToTeam(invite);
+  const member = await teamRepository.insertTeamMember(invite);
+  if (!member) throw new Error('Error adding user to team');
+  return member;
 }
 
 // Delete user from team
-export async function removeUserFromTeam(team_id: string, user_id: string, performed_by: string): Promise<boolean> {
-  const team = await teamRepository.selectTeamsByUserId(performed_by);
-  const t = team.find(t => t.team_id === team_id);
-  if (!t) throw new Error('Team not found or user has no access');
-  // Only owner can remove members
-  if (t.owner_id !== performed_by) throw new Error('Only the owner can remove members');
-  return await teamRepository.deleteUserFromTeam(user_id, team_id);
+// todo: validate permission to delete user from a team
+export async function deleteTeamMember(team_id: string, user_id: string): Promise<boolean> {
+  const team = (await teamRepository.selectTeams({ id: team_id }, 0, 1))[0];
+  if (!team) throw new Error('Team not found');
+  return await teamRepository.deleteTeamMember(user_id, team_id);
 }
 
 // Lists users from team
-export async function getTeamMembers(team_id: string, user_id: string): Promise<TeamMember[]> {
-  // Checks if the user is member of the team
-  const teamDetails = await teamRepository.selectTeamsByUserId(user_id);
-  const teamMembers = await teamRepository.selectTeamMembers(team_id);
-  const isOwner = teamDetails.some(t => t.team_id === team_id && t.owner_id === user_id);
-  const isMember = teamMembers.some(m => m.user_id === user_id);
-  if (!isOwner && !isMember) {
-    return []; // User has no access
-  }
-  return teamMembers;
-}
-
-// Lists tasks of teams
-export async function getTeamTasks(team_id: string, user_id: string): Promise<TeamTask[]> {
-  // Checks if the user is a member of the team
-  const teamMembers = await teamRepository.selectTeamMembers(team_id);
-  const teamDetails = await teamRepository.selectTeamsByUserId(user_id); // user's teams
-  const isMember = teamMembers.some(m => m.user_id === user_id);
-  const isOwner = teamDetails.some(t => t.team_id === team_id && t.owner_id === user_id);
-  if (!isMember && !isOwner) {
-    // User has no access -> returns empty array
-    return [];
-  }
-  // User has access -> returns tasks array
-  return await teamRepository.selectTeamTasks(team_id);
+// todo: validate permission to view all users of a team
+export async function listTeamMembers(team_id: string): Promise<User[]> {
+  return await teamRepository.selectMembers(team_id);
 }
 
 // Delete team
-export async function deleteTeam(team_id: string, user_id: string): Promise<boolean> {
-  const teamDetails = await teamRepository.selectTeamsByUserId(user_id);
-  const team = teamDetails.find(t => t.team_id === team_id);
-  if (!team) throw new Error("Team not found or user has no access");
-  if (team.owner_id !== user_id) throw new Error("Only the owner can delete the team");
+// todo: validate permission to delete a team
+export async function deleteTeam(team_id: string): Promise<boolean> {
+  const team = (await teamRepository.selectTeams({ id: team_id }, 0, 1))[0];
+  if (!team) throw new Error('Team not found');
   return await teamRepository.deleteTeam(team_id);
 }

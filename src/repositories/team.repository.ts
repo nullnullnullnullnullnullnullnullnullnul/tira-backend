@@ -1,8 +1,9 @@
 import pool from '../db';
-import { Team, TeamRow, Invite, TeamMember, TeamTask } from '../models/team';
+import { Team, Invite, TeamMember, TeamFilter } from '../models/team';
+import { User } from '../models/user';
 
 // Add team
-export async function insertTeam(team: Team): Promise<Team> {
+export async function insertTeam(team: Team): Promise<Team | null> {
   const result = await pool.query(`
     INSERT INTO teams(
       team_id,
@@ -13,35 +14,101 @@ export async function insertTeam(team: Team): Promise<Team> {
     `,
     [team.team_id, team.owner_id, team.name, team.created_at]
   );
-  return result.rows[0];
+  return result.rows[0] ?? null;
 }
 
-// Select all groups from user...
-export async function selectTeamsByUserId(id: string): Promise<Team[]> {
+// Update team's:
+// - name
+export async function updateTeam(
+  id: string,
+  fields: Partial<Omit<Team, 'team_id' | 'owner_id' | 'created_at'>>
+): Promise<Team | null> {
+  const keys = Object.keys(fields) as (keyof typeof fields)[];
+  // keys = ["name"]
+  const set = keys.map((k, i) => `${k} = $${i + 1}`);
+  // set = ["name = $1"]
+  const values = keys.map(k => fields[k]);
+  // values = ["newTeamName"]
+  const result = await pool.query(`
+    UPDATE teams
+    SET ${set.join(', ')}
+    WHERE team_id = $${keys.length + 1}
+    RETURNING *
+    `,
+    [...values, id]
+  );
+  return result.rows[0] ?? null;
+}
+
+// Remove a team
+export async function deleteTeam(id: string): Promise<boolean> {
+  const result = await pool.query(`
+    DELETE 
+    FROM teams 
+    WHERE team_id = $1
+    `,
+    [id]
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
+// Select team
+export async function selectTeams(
+  filter: TeamFilter = {},
+  offset: number = 0,
+  limit: number = 20
+): Promise<Team[]> {
+  const conditions: string[] = [];
+  const values: any[] = [];
+  // Filter by id
+  if (filter.id) {
+    values.push(filter.id);
+    conditions.push(`team_id = $${values.length}`);
+  }
+  // Filter by owner
+  if (filter.owner_id) {
+    values.push(filter.owner_id);
+    conditions.push(`owner_id = $${values.length}`);
+  }
+  // Filter by name
+  if (filter.name) {
+    values.push(`%${filter.name}%`);
+    conditions.push(`name ILIKE $${values.length}`);
+  }
+  const where: string = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  values.push(limit, offset);
   const result = await pool.query(`
     SELECT *
     FROM teams
-    WHERE owner_id = $1
+    ${where}
+    ORDER BY created_at DESC
+    LIMIT $${values.length - 1} OFFSET $${values.length}
     `,
-    [id]
+    values
   );
   return result.rows;
 }
 
-// Update team name
-export async function updateTeamName(name: string, team_id: string): Promise<Team> {
+// Selects all teams a user is on
+export async function selectTeamsByUser(user_id: string): Promise<Team[]> {
   const result = await pool.query(`
-    UPDATE teams
-    SET name = $1
-    WHERE team_id = $2
-    RETURNING *
+    SELECT t.team_id,
+           t.owner_id,
+           t.name,
+           t.created_at
+    FROM teams t
+    INNER JOIN team_members tm ON t.team_id = tm.team_id
+    WHERE tm.user_id = $1
+    ORDER BY t.created_at DESC
     `,
-    [name, team_id]);
-  return result.rows[0];
+    [user_id]
+  );
+  return result.rows;
 }
 
-// TEMP add user to team
-export async function insertUserToTeam(invite: Invite): Promise<TeamMember | null> {
+
+// Add user to team
+export async function insertTeamMember(invite: Invite): Promise<TeamMember | null> {
   const result = await pool.query(`
     INSERT INTO team_members(
       team_members_id,
@@ -61,29 +128,8 @@ export async function insertUserToTeam(invite: Invite): Promise<TeamMember | nul
   return result.rows[0] ?? null;
 }
 
-// Select team by team_id
-export async function selectTeamById(team_id: string): Promise<TeamRow[]> {
-  const result = await pool.query(`
-    SELECT
-      t.team_id,
-      t.name,
-      t.owner_id,
-      t.created_at,
-      tm.user_id AS member_user_id,
-      tm.role AS member_role,
-      tm.invited_at AS member_invited_at,
-      tm.joined_at AS member_joined_at
-    FROM teams t
-    LEFT JOIN team_members tm ON t.team_id = tm.team_id
-    WHERE t.team_id = $1
-    `,
-    [team_id]
-  );
-  return result.rows;
-}
-
-// TEMP remove user on team
-export async function deleteUserFromTeam(user_id: string, team_id: string): Promise<boolean> {
+// Remove user from team
+export async function deleteTeamMember(user_id: string, team_id: string): Promise<boolean> {
   const result = await pool.query(`
     DELETE
     FROM team_members
@@ -96,38 +142,20 @@ export async function deleteUserFromTeam(user_id: string, team_id: string): Prom
 }
 
 // Select team members
-export async function selectTeamMembers(team_id: string): Promise<TeamMember[]> {
+export async function selectMembers(team_id: string): Promise<User[]> {
   const result = await pool.query(`
-    SELECT * 
-    FROM team_members
-    WHERE team_id = $1
+    SELECT u.user_id,
+           u.username,
+           u.email,
+           u.role,
+           u.created_at,
+           u.last_login
+    FROM team_members tm
+    INNER JOIN users u ON tm.user_id = u.user_id
+    WHERE tm.team_id = $1
+    ORDER BY u.created_at ASC
     `,
     [team_id]
   );
   return result.rows;
-}
-
-// Select team tasks
-export async function selectTeamTasks(team_id: string): Promise<TeamTask[]> {
-  const result = await pool.query(`
-    SELECT *
-    FROM tasks
-    WHERE team_id = $1
-      ORDER BY deadline ASC
-    `,
-    [team_id]
-  );
-  return result.rows;
-}
-
-// Remove a team
-export async function deleteTeam(team_id: string): Promise<boolean> {
-  const result = await pool.query(`
-    DELETE 
-    FROM teams 
-    WHERE team_id = $1
-    `,
-    [team_id]
-  );
-  return (result.rowCount ?? 0) > 0;
 }
