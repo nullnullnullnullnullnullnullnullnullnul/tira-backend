@@ -26,7 +26,7 @@ export interface TeamMember {
 }
 
 export type TeamFilter = {
-  id?: string;
+  team_id?: string;
   owner_id?: string;
   name?: string;
 }

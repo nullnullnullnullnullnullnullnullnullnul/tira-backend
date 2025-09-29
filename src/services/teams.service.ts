@@ -51,7 +51,7 @@ export async function updateTeam(
 ): Promise<Team> {
   if (!fields.name) throw new Error('No fields to update')
   if (!isValidTeamName(fields.name)) throw new Error('Invalid team name');
-  const team = (await teamRepository.selectTeams({ id: team_id }, 0, 1))[0];
+  const team = (await teamRepository.selectTeams({ team_id: team_id }, 0, 1))[0];
   if (!team) throw new Error('Team not found');
   const updated = await teamRepository.updateTeam(team_id, fields);
   if (!updated) throw new Error('Error updating team');
@@ -69,7 +69,7 @@ export async function addUserToTeam(
   if (!user) throw new Error('User not found');
   if (!validRoles.includes(user.role as UserRole)) throw new Error('Invalid role');
   // Team exists
-  const team = (await teamRepository.selectTeams({ id: team_id }, 0, 1))[0];
+  const team = (await teamRepository.selectTeams({ team_id: team_id }, 0, 1))[0];
   if (!team) throw new Error('Team not found');
   // User is not a member of the team
   const members = await teamRepository.selectMembers(team_id);
@@ -90,7 +90,7 @@ export async function addUserToTeam(
 // Delete user from team
 // todo: validate permission to delete user from a team
 export async function deleteTeamMember(team_id: string, user_id: string): Promise<boolean> {
-  const team = (await teamRepository.selectTeams({ id: team_id }, 0, 1))[0];
+  const team = (await teamRepository.selectTeams({ team_id: team_id }, 0, 1))[0];
   if (!team) throw new Error('Team not found');
   return await teamRepository.deleteTeamMember(user_id, team_id);
 }
@@ -104,7 +104,7 @@ export async function listTeamMembers(team_id: string): Promise<User[]> {
 // Delete team
 // todo: validate permission to delete a team
 export async function deleteTeam(team_id: string): Promise<boolean> {
-  const team = (await teamRepository.selectTeams({ id: team_id }, 0, 1))[0];
+  const team = (await teamRepository.selectTeams({ team_id: team_id }, 0, 1))[0];
   if (!team) throw new Error('Team not found');
   return await teamRepository.deleteTeam(team_id);
 }

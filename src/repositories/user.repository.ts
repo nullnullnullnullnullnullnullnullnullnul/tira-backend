@@ -15,26 +15,16 @@ export async function selectUsers(
 ): Promise<User[]> {
   const conditions: string[] = [];
   const values: any[] = [];
-  // Filter by username
-  if (filter.username) {
-    values.push(`%${filter.username.toLowerCase()}%`);
-    conditions.push(`LOWER(username) LIKE $${values.length}`);
-  }
-  // Filter by role
-  if (filter.role) {
-    values.push(filter.role);
-    conditions.push(`role = $${values.length}`);
-  }
-  // Filter by id
-  if (filter.user_id) {
-    values.push(filter.user_id);
-    conditions.push(`user_id = $${values.length}`);
-  }
-  // Filter by email
-  if (filter.email) {
-    values.push(filter.email);
-    conditions.push(`email = $${values.length}`);
-  }
+  Object.entries(filter).forEach(([key, value]) => {
+    if (value == undefined || value == null) return;
+    if (key === 'username') {
+      values.push(`%${String(value).toLowerCase()}%`);
+      conditions.push(`LOWER(username) LIKE $${values.length}`);
+    } else {
+      values.push(value);
+      conditions.push(`${key} = $${values.length}`);
+    }
+  })
   const where: string = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   values.push(limit, offset);
   const result = await pool.query(`
@@ -81,9 +71,9 @@ export async function updateUser(
 ): Promise<User | null> {
   const keys = Object.keys(fields) as (keyof typeof fields)[];
   // keys = ["username", "email", "pwd_hash"]
-  const set= keys.map((k, i) => `${k} = $${i + 1}`);
+  const set = keys.map((k, i) => `${k} = $${i + 1}`);
   // set = ["username = $1", "email = $2", "pwd_hash = $3"]
-  const values= keys.map(k => fields[k]);
+  const values = keys.map(k => fields[k]);
   // values = ["newUsername", "newMail@example.com", "pwdhash"]
   const result = await pool.query(`
     UPDATE users

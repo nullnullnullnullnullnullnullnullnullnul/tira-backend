@@ -60,22 +60,19 @@ export async function selectTeams(
 ): Promise<Team[]> {
   const conditions: string[] = [];
   const values: any[] = [];
-  // Filter by id
-  if (filter.id) {
-    values.push(filter.id);
-    conditions.push(`team_id = $${values.length}`);
-  }
-  // Filter by owner
-  if (filter.owner_id) {
-    values.push(filter.owner_id);
-    conditions.push(`owner_id = $${values.length}`);
-  }
-  // Filter by name
-  if (filter.name) {
-    values.push(`%${filter.name}%`);
-    conditions.push(`name ILIKE $${values.length}`);
-  }
-  const where: string = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  Object.entries(filter).forEach(([key, value]) => {
+    if (value === undefined || value === null) return;
+    // Use ILIKE for name key
+    if (key === "name") {
+      values.push(`%${value}%`);
+      conditions.push(`${key} ILIKE $${values.length}`);
+    } else {
+      values.push(value);
+      conditions.push(`${key} = $${values.length}`);
+    }
+  });
+  const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+  // Add pagination
   values.push(limit, offset);
   const result = await pool.query(`
     SELECT *
@@ -105,7 +102,6 @@ export async function selectTeamsByUser(user_id: string): Promise<Team[]> {
   );
   return result.rows;
 }
-
 
 // Add user to team
 export async function insertTeamMember(invite: Invite): Promise<TeamMember | null> {
