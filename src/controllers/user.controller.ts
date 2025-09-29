@@ -8,7 +8,7 @@ interface ListUsersQuery {
   username?: string;
   email?: string;
   role?: UserRole;
-  id?: string;
+  user_id?: string;
   offset?: number;
   limit?: number;
 }
@@ -26,22 +26,26 @@ interface UpdateUserBody {
   password?: string;
 }
 
-interface UserIdParams {
-  id: string;
+export interface DeleteUserParams extends Record<string, string> {
+  user_id: string;
 }
 
-// GET /users?username=&email=&role=&id=&offset=&limit=
+export interface UpdateUserParams extends Record<string, string> {
+  user_id: string;
+}
+
+// GET /users?username=&email=&role=&user_id=&offset=&limit=
 export async function listUsers(
   req: Request<{}, {}, {}, ListUsersQuery>,
   res: Response<UserSafe[] | { error: string }>
 ) {
   try {
-    const { username, email, role, id, offset, limit } = req.query;
+    const { username, email, role, user_id, offset, limit } = req.query;
     const filter: UserFilter = {};
     if (username) filter.username = String(username);
     if (email) filter.email = String(email);
     if (role) filter.role = String(role) as UserRole;
-    if (id) filter.id = String(id);
+    if (user_id) filter.user_id = String(user_id);
     const users: UserSafe[] = await userService.listUsers(
       filter,
       Number(offset) || 0,
@@ -68,14 +72,14 @@ export async function createUser(
   }
 }
 
-// DELETE /users/:id
+// DELETE /users/:user_id
 export async function deleteUser(
-  req: Request<UserIdParams>,
+  req: Request<DeleteUserParams>,
   res: Response<{} | { error: string }>
 ) {
   try {
-    const { id } = req.params;
-    const deleted: boolean = await userService.deleteUser(id);
+    const { user_id } = req.params;
+    const deleted: boolean = await userService.deleteUser(user_id);
     if (!deleted) return res.status(404).json({ error: 'User not found'});
     res.status(204).send();
   } catch (err: any) {
@@ -83,13 +87,13 @@ export async function deleteUser(
   }
 }
 
-// PATCH /users/:id
+// PATCH /users/:user_id
 export async function updateUser(
-  req: Request<UserIdParams, {}, UpdateUserBody>,
+  req: Request<UpdateUserParams, {}, UpdateUserBody>,
   res: Response<UserSafe | { error: string }>
 ) {
   try {
-    const { id } = req.params;
+    const { user_id } = req.params;
     const { username, email, password } = req.body;
     const fields: UpdateUserBody = {};
     if (Object.keys(fields).length === 0) {
@@ -98,7 +102,7 @@ export async function updateUser(
     if (username) fields.username = username;
     if (email) fields.email = email;
     if (password) fields.password = password;
-    const updatedUser: UserSafe = await userService.updateUser(id, fields);
+    const updatedUser: UserSafe = await userService.updateUser(user_id, fields);
     res.json(updatedUser);
   } catch (err: any) {
     res.status(400).json({ error: err.message });

@@ -10,7 +10,7 @@ export type User = {
 export type UserRole = "leader" | "user";
 export const validRoles: UserRole[] = ["leader", "user"];
 export type UserFilter = {
-  id?: string;
+  user_id?: string;
   username?: string;
   email?: string;
   role?: string;
