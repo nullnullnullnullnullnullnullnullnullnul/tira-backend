@@ -21,7 +21,7 @@ paths:
       summary: List users with optional filters
       tags:
         - Users
-      description: Lists all users, optionally filtered by username, email, role, or id, with pagination.
+      description: Lists all users, optionally filtered by username, email, role, or user_id, with pagination.
       parameters:
         - in: query
           name: username
@@ -40,7 +40,7 @@ paths:
             enum: [user, leader]
           description: Filter by role
         - in: query
-          name: id
+          name: user_id
           schema:
             type: string
           description: Filter by user ID
@@ -84,14 +84,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/User'
 
-  /users/{id}:
+  /users/{user_id}:
     delete:
       summary: Delete a user by ID
       tags:
         - Users
       parameters:
         - in: path
-          name: id
+          name: user_id
           schema:
             type: string
           required: true
@@ -107,7 +107,7 @@ paths:
         - Users
       parameters:
         - in: path
-          name: id
+          name: user_id
           required: true
           schema:
             type: string

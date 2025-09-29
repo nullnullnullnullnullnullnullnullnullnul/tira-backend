@@ -6,7 +6,7 @@ const options = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "Teams API",
+      title: "Tira API",
       version: "1.0.0",
       description: "API REST para gestión de usuarios y equipos",
     },
@@ -16,7 +16,7 @@ const options = {
       },
     ],
   },
-  apis: ["./src/routes/*.ts", "./src/controllers/*.ts"], // donde estarán los comentarios
+  apis: ["./src/routes/*.ts", "./src/controllers/*.ts"], 
 };
 
 const specs = swaggerJsdoc(options);
