@@ -433,6 +433,301 @@ paths:
                     type: string
                     example: "Member not found"
 
+
+# =============
+# === TASKS ===
+
+
+  /tasks:
+    get:
+      summary: List tasks with optional filters
+      tags:
+        - Tasks
+      description: Lists all tasks, optionally filtered by various criteria with pagination.
+      parameters:
+        - in: query
+          name: task_id
+          schema:
+            type: string
+          description: Filter by task ID
+        - in: query
+          name: team_id
+          schema:
+            type: string
+          description: Filter by team ID
+        - in: query
+          name: assigned_to
+          schema:
+            type: string
+          description: Filter by assigned user ID
+        - in: query
+          name: created_by
+          schema:
+            type: string
+          description: Filter by creator user ID
+        - in: query
+          name: title
+          schema:
+            type: string
+          description: Filter by title (partial match, case insensitive)
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, ongoing, done, canceled]
+          description: Filter by status
+        - in: query
+          name: priority
+          schema:
+            type: string
+            enum: [high, medium, low]
+          description: Filter by priority
+        - in: query
+          name: date_start
+          schema:
+            type: string
+            format: date-time
+          description: Filter tasks with deadline >= this date
+        - in: query
+          name: date_end
+          schema:
+            type: string
+            format: date-time
+          description: Filter tasks with deadline <= this date
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+          description: Number of records to skip
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+          description: Maximum number of records to return
+      responses:
+        '200':
+          description: Array of tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Internal server error"
+
+    post:
+      summary: Create a new task
+      tags:
+        - Tasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - created_by
+                - team_id
+                - assigned_to
+                - title
+                - status
+                - priority
+                - deadline
+              properties:
+                created_by:
+                  type: string
+                  example: "01JXXXXXXXXXXXXXXXXXX"
+                  description: "TODO: Will be removed when JWT auth is implemented"
+                team_id:
+                  type: string
+                  example: "01JYYYYYYYYYYYYYYYYYY"
+                assigned_to:
+                  type: string
+                  example: "01JZZZZZZZZZZZZZZZZZZ"
+                title:
+                  type: string
+                  minLength: 3
+                  maxLength: 100
+                  example: "Implement authentication"
+                description:
+                  type: string
+                  nullable: true
+                  example: "Add JWT authentication to the API"
+                status:
+                  type: string
+                  enum: [pending, ongoing, done, canceled]
+                  example: "pending"
+                priority:
+                  type: string
+                  enum: [high, medium, low]
+                  example: "high"
+                deadline:
+                  type: string
+                  format: date-time
+                  example: "2025-12-31T23:59:59Z"
+                content:
+                  type: string
+                  nullable: true
+                  example: "Additional task details or notes"
+      responses:
+        '201':
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid task title"
+
+  /tasks/{task_id}:
+    get:
+      summary: Get a single task by ID
+      tags:
+        - Tasks
+      parameters:
+        - in: path
+          name: task_id
+          required: true
+          schema:
+            type: string
+          description: ID of the task to retrieve
+      responses:
+        '200':
+          description: Task found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Task not found"
+
+    patch:
+      summary: Update a task
+      tags:
+        - Tasks
+      description: Updates one or more fields of a task. All fields are optional.
+      parameters:
+        - in: path
+          name: task_id
+          required: true
+          schema:
+            type: string
+          description: ID of the task to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                assigned_to:
+                  type: string
+                  example: "01JAAAAAAAAAAAAAAAAAA"
+                title:
+                  type: string
+                  minLength: 3
+                  maxLength: 100
+                  example: "Updated task title"
+                description:
+                  type: string
+                  nullable: true
+                  example: "Updated description"
+                status:
+                  type: string
+                  enum: [pending, ongoing, done, canceled]
+                  example: "ongoing"
+                priority:
+                  type: string
+                  enum: [high, medium, low]
+                  example: "medium"
+                deadline:
+                  type: string
+                  format: date-time
+                  example: "2026-01-15T23:59:59Z"
+                content:
+                  type: string
+                  nullable: true
+                  example: "Updated content"
+      responses:
+        '200':
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Invalid input or no fields provided
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No fields to update"
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Task not found"
+
+    delete:
+      summary: Delete a task
+      tags:
+        - Tasks
+      parameters:
+        - in: path
+          name: task_id
+          required: true
+          schema:
+            type: string
+          description: ID of the task to delete
+      responses:
+        '204':
+          description: Task deleted successfully (no content)
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Task not found"
+
 # ==================
 # === COMPONENTS ===
 
@@ -564,3 +859,93 @@ components:
         name:
           type: string
           example: "Marketing Team"
+
+    Task:
+      type: object
+      required:
+        - task_id
+        - team_id
+        - assigned_to
+        - created_by
+        - title
+        - status
+        - priority
+        - deadline
+        - last_modified_at
+      properties:
+        task_id:
+          type: string
+          example: "01JXXXXXXXXXXXXXXXXXX"
+        team_id:
+          type: string
+          example: "01JYYYYYYYYYYYYYYYYYY"
+        assigned_to:
+          type: string
+          example: "01JZZZZZZZZZZZZZZZZZZ"
+        created_by:
+          type: string
+          example: "01JAAAAAAAAAAAAAAAAAA"
+        title:
+          type: string
+          minLength: 3
+          maxLength: 100
+          example: "Implement authentication"
+        description:
+          type: string
+          nullable: true
+          example: "Add JWT authentication to the API"
+        status:
+          type: string
+          enum: [pending, ongoing, done, canceled]
+          example: "pending"
+        priority:
+          type: string
+          enum: [high, medium, low]
+          example: "high"
+        deadline:
+          type: string
+          format: date-time
+          example: "2025-12-31T23:59:59Z"
+        content:
+          type: string
+          nullable: true
+          example: "Additional task details or notes"
+        last_modified_at:
+          type: string
+          format: date-time
+          example: "2025-10-05T14:30:00Z"
+
+    TaskFilter:
+      type: object
+      properties:
+        task_id:
+          type: string
+          example: "01JXXXXXXXXXXXXXXXXXX"
+        team_id:
+          type: string
+          example: "01JYYYYYYYYYYYYYYYYYY"
+        assigned_to:
+          type: string
+          example: "01JZZZZZZZZZZZZZZZZZZ"
+        created_by:
+          type: string
+          example: "01JAAAAAAAAAAAAAAAAAA"
+        title:
+          type: string
+          example: "authentication"
+        status:
+          type: string
+          enum: [pending, ongoing, done, canceled]
+          example: "pending"
+        priority:
+          type: string
+          enum: [high, medium, low]
+          example: "high"
+        date_start:
+          type: string
+          format: date-time
+          example: "2025-01-01T00:00:00Z"
+        date_end:
+          type: string
+          format: date-time
+          example: "2025-12-31T23:59:59Z"
