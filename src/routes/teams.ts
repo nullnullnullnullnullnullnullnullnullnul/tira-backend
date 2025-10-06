@@ -9,7 +9,7 @@ import {
   RemoveUserFromTeamParams,
   ListTeamMembersParams,
   DeleteTeamParams
-} from '../controllers/team.controller';
+} from '../dto/team.dto';
 
 const router = Router();
 

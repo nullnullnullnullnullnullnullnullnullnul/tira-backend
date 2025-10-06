@@ -63,15 +63,15 @@ export async function selectTeams(
   Object.entries(filter).forEach(([key, value]) => {
     if (value === undefined || value === null) return;
     // Use ILIKE for name key
-    if (key === "name") {
+    if (key === 'name') {
       values.push(`%${value}%`);
       conditions.push(`${key} ILIKE $${values.length}`);
     } else {
       values.push(value);
       conditions.push(`${key} = $${values.length}`);
     }
-  });
-  const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+  })
+  const where: string = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   // Add pagination
   values.push(limit, offset);
   const result = await pool.query(`

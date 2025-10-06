@@ -2,30 +2,17 @@ import { Request, Response } from 'express';
 import * as teamService from '../services/teams.service';
 import { Team, TeamMember } from '../models/team';
 import { User } from '../models/user';
-
-// Models, Request<Params, ResBody, ReqBody, ReqQuery>
-export interface GetUserTeamsParams extends Record<string, string>{
-  user_id: string;
-}
-export interface UpdateTeamParams extends Record<string, string> {
-  team_id: string;
-}
-export interface AddUserToTeamParams extends Record<string, string>{
-  team_id: string;
-}
-export interface RemoveUserFromTeamParams extends Record<string, string>{
-  team_id: string;
-  user_id: string;
-}
-export interface ListTeamMembersParams extends Record<string, string>{
-  team_id: string;
-}
-export interface DeleteTeamParams extends Record<string, string>{
-  team_id: string;
-}
-interface UpdateTeamBody { name: string }
-interface AddUserToTeamBody { user_id: string }
-interface CreateTeamBody { owner_id: string; name: string; }
+import {
+  GetUserTeamsParams,
+  UpdateTeamParams,
+  AddUserToTeamParams,
+  RemoveUserFromTeamParams,
+  ListTeamMembersParams,
+  DeleteTeamParams,
+  UpdateTeamBody,
+  AddUserToTeamBody,
+  CreateTeamBody
+} from '../dto/team.dto';
 
 // POST /teams
 export async function createTeam(
