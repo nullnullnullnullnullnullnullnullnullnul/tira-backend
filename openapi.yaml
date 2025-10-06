@@ -728,6 +728,575 @@ paths:
                     type: string
                     example: "Task not found"
 
+
+# ============
+# === TAGS ===
+
+
+  /tags/teams/{team_id}:
+    post:
+      summary: Create a new tag
+      tags:
+        - Tags
+      description: Creates a new tag for a specific team
+      parameters:
+        - in: path
+          name: team_id
+          required: true
+          schema:
+            type: string
+          description: ID of the team
+          example: "01JYYYYYYYYYYYYYYYYYY"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 20
+                  pattern: '^[A-Za-z0-9 _-]+$'
+                  example: "urgent"
+                  description: "Tag name (1-20 characters, letters, numbers, spaces, underscores, hyphens)"
+      responses:
+        '201':
+          description: Tag created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid tag name"
+
+    get:
+      summary: Get all tags for a team
+      tags:
+        - Tags
+      description: Retrieves all tags belonging to a specific team
+      parameters:
+        - in: path
+          name: team_id
+          required: true
+          schema:
+            type: string
+          description: ID of the team
+          example: "01JYYYYYYYYYYYYYYYYYY"
+      responses:
+        '200':
+          description: Array of tags
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tag'
+        '400':
+          description: Team not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Team not found"
+
+  /tags/teams/{team_id}/{tag_id}:
+    get:
+      summary: Get a specific tag
+      tags:
+        - Tags
+      description: Retrieves a specific tag by ID
+      parameters:
+        - in: path
+          name: team_id
+          required: true
+          schema:
+            type: string
+          description: ID of the team
+          example: "01JYYYYYYYYYYYYYYYYYY"
+        - in: path
+          name: tag_id
+          required: true
+          schema:
+            type: string
+          description: ID of the tag
+          example: "01JXXXXXXXXXXXXXXXXXX"
+      responses:
+        '200':
+          description: Tag found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+        '400':
+          description: Tag not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Tag not found"
+
+    patch:
+      summary: Update a tag name
+      tags:
+        - Tags
+      description: Updates the name of an existing tag
+      parameters:
+        - in: path
+          name: team_id
+          required: true
+          schema:
+            type: string
+          description: ID of the team
+          example: "01JYYYYYYYYYYYYYYYYYY"
+        - in: path
+          name: tag_id
+          required: true
+          schema:
+            type: string
+          description: ID of the tag
+          example: "01JXXXXXXXXXXXXXXXXXX"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 20
+                  pattern: '^[A-Za-z0-9 _-]+$'
+                  example: "high-priority"
+                  description: "New tag name (1-20 characters, letters, numbers, spaces, underscores, hyphens)"
+      responses:
+        '200':
+          description: Tag updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid tag name"
+
+    delete:
+      summary: Delete a tag
+      tags:
+        - Tags
+      description: Deletes a tag and removes it from all associated tasks
+      parameters:
+        - in: path
+          name: team_id
+          required: true
+          schema:
+            type: string
+          description: ID of the team
+          example: "01JYYYYYYYYYYYYYYYYYY"
+        - in: path
+          name: tag_id
+          required: true
+          schema:
+            type: string
+          description: ID of the tag
+          example: "01JXXXXXXXXXXXXXXXXXX"
+      responses:
+        '200':
+          description: Tag deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '404':
+          description: Tag not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Tag not found"
+
+  /tags/teams/{team_id}/{tag_id}/tasks:
+    get:
+      summary: Get all tasks with a specific tag
+      tags:
+        - Tags
+      description: Retrieves all tasks that have been assigned a specific tag
+      parameters:
+        - in: path
+          name: team_id
+          required: true
+          schema:
+            type: string
+          description: ID of the team
+          example: "01JYYYYYYYYYYYYYYYYYY"
+        - in: path
+          name: tag_id
+          required: true
+          schema:
+            type: string
+          description: ID of the tag
+          example: "01JXXXXXXXXXXXXXXXXXX"
+      responses:
+        '200':
+          description: Array of tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        '400':
+          description: Tag not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Tag not found"
+
+  /tags/tasks/{task_id}:
+    post:
+      summary: Add a tag to a task
+      tags:
+        - Tags
+      description: Associates a tag with a task
+      parameters:
+        - in: path
+          name: task_id
+          required: true
+          schema:
+            type: string
+          description: ID of the task
+          example: "01JXXXXXXXXXXXXXXXXXX"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tag_id
+              properties:
+                tag_id:
+                  type: string
+                  example: "01JZZZZZZZZZZZZZZZZZZ"
+                  description: "ID of the tag to add"
+      responses:
+        '201':
+          description: Tag added to task successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskTag'
+        '400':
+          description: Invalid input or tag already assigned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Tag already assigned to this task"
+
+    get:
+      summary: Get all tags for a task
+      tags:
+        - Tags
+      description: Retrieves all tags associated with a specific task
+      parameters:
+        - in: path
+          name: task_id
+          required: true
+          schema:
+            type: string
+          description: ID of the task
+          example: "01JXXXXXXXXXXXXXXXXXX"
+      responses:
+        '200':
+          description: Array of tags
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tag'
+        '400':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Task not found"
+
+  /tags/tasks/{task_id}/{tag_id}:
+    delete:
+      summary: Remove a tag from a task
+      tags:
+        - Tags
+      description: Removes the association between a tag and a task
+      parameters:
+        - in: path
+          name: task_id
+          required: true
+          schema:
+            type: string
+          description: ID of the task
+          example: "01JXXXXXXXXXXXXXXXXXX"
+        - in: path
+          name: tag_id
+          required: true
+          schema:
+            type: string
+          description: ID of the tag
+          example: "01JZZZZZZZZZZZZZZZZZZ"
+      responses:
+        '204':
+          description: Tag removed from task successfully (no content)
+        '404':
+          description: Tag not found on task
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Tag not found on task"
+
+
+# ===============
+# === COMMENTS ===
+
+
+  /comments:
+    get:
+      summary: List comments with optional filters
+      tags:
+        - Comments
+      description: Lists all comments, optionally filtered by comment_id, task_id, or author_id, with pagination.
+      parameters:
+        - in: query
+          name: comment_id
+          schema:
+            type: string
+          description: Filter by comment ID
+        - in: query
+          name: task_id
+          schema:
+            type: string
+          description: Filter by task ID
+        - in: query
+          name: author_id
+          schema:
+            type: string
+          description: Filter by author user ID
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+          description: Number of records to skip
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+          description: Maximum number of records to return
+      responses:
+        '200':
+          description: Array of comments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Comment'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Task not found"
+
+  /comments/tasks/{task_id}:
+    post:
+      summary: Create a new comment on a task
+      tags:
+        - Comments
+      description: Creates a new comment associated with a specific task
+      parameters:
+        - in: path
+          name: task_id
+          required: true
+          schema:
+            type: string
+          description: ID of the task to comment on
+          example: "01JXXXXXXXXXXXXXXXXXX"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - author_id
+                - content
+              properties:
+                author_id:
+                  type: string
+                  example: "01JYYYYYYYYYYYYYYYYYY"
+                  description: "ID of the user creating the comment"
+                content:
+                  type: string
+                  minLength: 1
+                  maxLength: 300
+                  example: "This task looks good, but we need to update the documentation."
+                  description: "Comment content (1-300 characters)"
+      responses:
+        '201':
+          description: Comment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Comment content must be between 1 and 300 characters"
+
+  /comments/{comment_id}:
+    patch:
+      summary: Update a comment
+      tags:
+        - Comments
+      description: Updates the content of an existing comment
+      parameters:
+        - in: path
+          name: comment_id
+          required: true
+          schema:
+            type: string
+          description: ID of the comment to update
+          example: "01JXXXXXXXXXXXXXXXXXX"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+              properties:
+                content:
+                  type: string
+                  minLength: 1
+                  maxLength: 300
+                  example: "Updated comment text"
+                  description: "New comment content (1-300 characters)"
+      responses:
+        '200':
+          description: Comment updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Comment content must be between 1 and 300 characters"
+
+    delete:
+      summary: Delete a comment
+      tags:
+        - Comments
+      description: Deletes a comment by ID
+      parameters:
+        - in: path
+          name: comment_id
+          required: true
+          schema:
+            type: string
+          description: ID of the comment to delete
+          example: "01JXXXXXXXXXXXXXXXXXX"
+      responses:
+        '200':
+          description: Comment deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '404':
+          description: Comment not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Comment not found"
+
+
 # ==================
 # === COMPONENTS ===
 
@@ -949,3 +1518,93 @@ components:
           type: string
           format: date-time
           example: "2025-12-31T23:59:59Z"
+
+    Tag:
+          type: object
+          required:
+            - tag_id
+            - team_id
+            - name
+          properties:
+            tag_id:
+              type: string
+              example: "01JXXXXXXXXXXXXXXXXXX"
+              description: "Unique identifier for the tag"
+            team_id:
+              type: string
+              example: "01JYYYYYYYYYYYYYYYYYY"
+              description: "ID of the team this tag belongs to"
+            name:
+              type: string
+              minLength: 1
+              maxLength: 20
+              pattern: '^[A-Za-z0-9 _-]+$'
+              example: "urgent"
+              description: "Tag name (1-20 characters, letters, numbers, spaces, underscores, hyphens only)"
+
+    TaskTag:
+      type: object
+      required:
+        - task_tags_id
+        - task_id
+        - tag_id
+      properties:
+        task_tags_id:
+          type: string
+          example: "01JXXXXXXXXXXXXXXXXXX"
+          description: "Unique identifier for the task-tag association"
+        task_id:
+          type: string
+          example: "01JYYYYYYYYYYYYYYYYYY"
+          description: "ID of the task"
+        tag_id:
+          type: string
+          example: "01JZZZZZZZZZZZZZZZZZZ"
+          description: "ID of the tag"
+
+    Comment:
+      type: object
+      required:
+        - comment_id
+        - task_id
+        - content
+        - created_at
+      properties:
+        comment_id:
+          type: string
+          example: "01JXXXXXXXXXXXXXXXXXX"
+          description: "Unique identifier for the comment"
+        task_id:
+          type: string
+          example: "01JYYYYYYYYYYYYYYYYYY"
+          description: "ID of the task this comment belongs to"
+        author_id:
+          type: string
+          nullable: true
+          example: "01JZZZZZZZZZZZZZZZZZZ"
+          description: "ID of the user who created the comment (null if user deleted)"
+        content:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 300
+          example: "This is a comment on the task"
+          description: "Comment content (1-300 characters)"
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-10-06T14:30:00Z"
+          description: "Timestamp when the comment was created"
+
+    CommentFilter:
+      type: object
+      properties:
+        comment_id:
+          type: string
+          example: "01JXXXXXXXXXXXXXXXXXX"
+        task_id:
+          type: string
+          example: "01JYYYYYYYYYYYYYYYYYY"
+        author_id:
+          type: string
+          example: "01JZZZZZZZZZZZZZZZZZZ"
