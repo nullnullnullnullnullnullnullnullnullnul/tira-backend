@@ -2,7 +2,7 @@ import { Router } from 'express';
 import * as userController from '../controllers/user.controller';
 import { requireBody } from "../validators/requireBody";
 import { requireParams } from '../validators/requireParams';
-import { DeleteUserParams, UpdateUserParams } from '../controllers/user.controller';
+import { DeleteUserParams, UpdateUserParams } from '../dto/user.dto';
 
 const router = Router();
 

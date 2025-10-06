@@ -2,37 +2,13 @@ import { Request, Response } from "express";
 import { UserFilter, UserRole } from '../models/user';
 import * as userService from '../services/users.service';
 import { UserSafe } from "../services/users.service";
-
-// Models
-interface ListUsersQuery {
-  username?: string;
-  email?: string;
-  role?: UserRole;
-  user_id?: string;
-  offset?: number;
-  limit?: number;
-}
-
-interface CreateUserBody {
-  username: string;
-  email: string;
-  role: UserRole;
-  password: string;
-}
-
-interface UpdateUserBody {
-  username?: string;
-  email?: string;
-  password?: string;
-}
-
-export interface DeleteUserParams extends Record<string, string> {
-  user_id: string;
-}
-
-export interface UpdateUserParams extends Record<string, string> {
-  user_id: string;
-}
+import {
+  ListUsersQuery,
+  CreateUserBody,
+  UpdateUserBody,
+  DeleteUserParams,
+  UpdateUserParams
+} from '../dto/user.dto';
 
 // GET /users?username=&email=&role=&user_id=&offset=&limit=
 export async function listUsers(
@@ -80,7 +56,7 @@ export async function deleteUser(
   try {
     const { user_id } = req.params;
     const deleted: boolean = await userService.deleteUser(user_id);
-    if (!deleted) return res.status(404).json({ error: 'User not found'});
+    if (!deleted) return res.status(404).json({ error: 'User not found' });
     res.status(204).send();
   } catch (err: any) {
     res.status(404).json({ error: err.message });

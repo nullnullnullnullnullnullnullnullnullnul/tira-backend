@@ -8,4 +8,3 @@ export function requireBody(fields: string[]) {
     next();
   };
 }
-

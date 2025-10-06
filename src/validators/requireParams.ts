@@ -8,4 +8,3 @@ export function requireParams<Params extends Record<string, string>>(fields: (ke
     next();
   };
 }
-
