@@ -189,5 +189,3 @@ curl -s http://localhost:3000/teams/<team_id>/tasks?user_id=<requesting_user_id>
 - Make history table on database
 - Implementing history table GET, DELETE routes
 - Add authentication & authorization
-- Add integration tests
-- Delete a team
