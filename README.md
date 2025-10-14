@@ -33,7 +33,7 @@ It is built with Node.js, Express, and PostgreSQL, and uses TypeScript for devel
 
 3. Configure environment variables:  
    Create a `.env` file in the project root with the following keys:
-   ```env
+```env
 PORT=3000
 DB_USER=tira
 DB_PASSWORD=
@@ -42,7 +42,7 @@ DB_PORT=5432
 DB_NAME=tira_db
 DB_SUPERUSER=postgres
 DB_SUPERPASS=
-   ```
+```
 
 ---
 
@@ -179,9 +179,9 @@ curl -s http://localhost:3000/teams/<team_id>/tasks?user_id=<requesting_user_id>
 - Default port: **3000** (can be changed via `PORT` in `.env`).
 - Use `npm run <script>` for available commands.
 - API documentation available at:  
-  ```
-  http://localhost:3000/api-docs
-  ```
+```bash
+http://localhost:3000/api-docs
+```
 
 ---
 
