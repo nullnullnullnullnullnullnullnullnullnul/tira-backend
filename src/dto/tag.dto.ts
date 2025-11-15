@@ -1,3 +1,5 @@
+import { PaginationQuery } from "./pagination.dto";
+
 // Request Params interfaces
 export interface CreateTagParams extends Record<string, string> {
   team_id: string;
@@ -52,3 +54,6 @@ export interface UpdateTagBody {
 export interface AddTagToTaskBody {
   tag_id: string;
 }
+
+export interface GetTagsByTeamQuery extends PaginationQuery {}
+export interface GetTasksByTagQuery extends PaginationQuery {}

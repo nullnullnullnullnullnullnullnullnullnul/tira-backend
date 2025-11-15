@@ -1,6 +1,7 @@
 import pool from '../db';
 import { Team, Invite, TeamMember, TeamFilter } from '../models/team';
 import { User } from '../models/user';
+import { PaginatedResult, createPaginatedResult } from '../models/pagination';
 
 // Add team
 export async function insertTeam(team: Team): Promise<Team | null> {
@@ -17,7 +18,7 @@ export async function insertTeam(team: Team): Promise<Team | null> {
   return result.rows[0] ?? null;
 }
 
-// Update team's:
+// Update teams:
 // - name
 export async function updateTeam(
   id: string,
@@ -55,9 +56,9 @@ export async function deleteTeam(id: string): Promise<boolean> {
 // Select team
 export async function selectTeams(
   filter: TeamFilter = {},
-  offset: number = 0,
-  limit: number = 20
-): Promise<Team[]> {
+  page: number = 1,
+  pageSize: number = 100
+): Promise<PaginatedResult<Team>> {
   const conditions: string[] = [];
   const values: any[] = [];
   Object.entries(filter).forEach(([key, value]) => {
@@ -73,9 +74,11 @@ export async function selectTeams(
   })
   const where: string = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   // Add pagination
-  values.push(limit, offset);
+  const offset = (page - 1) * pageSize;
+  values.push(pageSize, offset);
   const result = await pool.query(`
-    SELECT *
+    SELECT *,
+      COUNT(*) OVER() as total_count
     FROM teams
     ${where}
     ORDER BY created_at DESC
@@ -83,24 +86,31 @@ export async function selectTeams(
     `,
     values
   );
-  return result.rows;
+  return createPaginatedResult(result.rows, page, pageSize);
 }
 
 // Selects all teams a user is on
-export async function selectTeamsByUser(user_id: string): Promise<Team[]> {
+export async function selectTeamsByUser(
+  user_id: string,
+  page: number = 1,
+  pageSize: number = 100
+): Promise<PaginatedResult<Team>> {
+  const offset = (page - 1) * pageSize;
   const result = await pool.query(`
     SELECT t.team_id,
            t.owner_id,
            t.name,
-           t.created_at
+           t.created_at,
+           COUNT(*) OVER() as total_count
     FROM teams t
     INNER JOIN team_members tm ON t.team_id = tm.team_id
     WHERE tm.user_id = $1
     ORDER BY t.created_at DESC
+    LIMIT $2 OFFSET $3
     `,
-    [user_id]
+    [user_id, pageSize, offset]
   );
-  return result.rows;
+  return createPaginatedResult<Team>(result.rows, page, pageSize);
 }
 
 // Add user to team
@@ -138,20 +148,27 @@ export async function deleteTeamMember(user_id: string, team_id: string): Promis
 }
 
 // Select team members
-export async function selectMembers(team_id: string): Promise<User[]> {
+export async function selectMembers(
+  team_id: string,
+  page: number = 1,
+  pageSize: number = 100
+): Promise<PaginatedResult<User>> {
+  const offset = (page - 1) * pageSize;
   const result = await pool.query(`
     SELECT u.user_id,
            u.username,
            u.email,
            u.role,
            u.created_at,
-           u.last_login
+           u.last_login,
+           COUNT(*) OVER() as total_count
     FROM team_members tm
     INNER JOIN users u ON tm.user_id = u.user_id
     WHERE tm.team_id = $1
     ORDER BY u.created_at ASC
+    LIMIT $2 OFFSET $3
     `,
-    [team_id]
+    [team_id, pageSize, offset]
   );
-  return result.rows;
+  return createPaginatedResult<User>(result.rows, page, pageSize);
 }

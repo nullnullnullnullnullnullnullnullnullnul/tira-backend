@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import * as tagService from '../services/tags.service';
 import { Tag, TaskTag } from '../models/tag';
 import { Task } from '../models/task';
+import { PaginatedResult } from '../models/pagination';
+import { parsePaginationQuery } from '../dto/pagination.dto';
 import {
   CreateTagParams,
   CreateTagBody,
@@ -14,12 +16,14 @@ import {
   AddTagToTaskBody,
   RemoveTagFromTaskParams,
   GetTagsByTaskParams,
-  GetTasksByTagParams
+  GetTasksByTagParams,
+  GetTagsByTeamQuery,
+  GetTasksByTagQuery
 } from '../dto/tag.dto';
 
 // POST /teams/:team_id/tags
 export async function createTag(
-  req: Request<CreateTagParams, {}, CreateTagBody>,
+  req: Request<CreateTagParams, {}, CreateTagBody, {}, {}>,
   res: Response<Tag | { error: string }>
 ) {
   try {
@@ -32,14 +36,15 @@ export async function createTag(
   }
 }
 
-// GET /teams/:team_id/tags
+// GET /teams/:team_id/tags?page=&pageSize=
 export async function getTagsByTeam(
-  req: Request<GetTagsByTeamParams>,
-  res: Response<Tag[] | { error: string }>
+  req: Request<GetTagsByTeamParams, {}, {}, GetTagsByTeamQuery, {}>,
+  res: Response<PaginatedResult<Tag> | { error: string }>
 ) {
   try {
     const { team_id } = req.params;
-    const tags = await tagService.getTagsByTeam(team_id);
+    const { page, pageSize } = parsePaginationQuery(req.query);
+    const tags = await tagService.getTagsByTeam(team_id, page, pageSize);
     res.json(tags);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -48,7 +53,7 @@ export async function getTagsByTeam(
 
 // GET /teams/:team_id/tags/:tag_id
 export async function getTagById(
-  req: Request<GetTagByIdParams>,
+  req: Request<GetTagByIdParams, {}, {}, {}, {}>,
   res: Response<Tag | { error: string }>
 ) {
   try {
@@ -62,7 +67,7 @@ export async function getTagById(
 
 // PATCH /teams/:team_id/tags/:tag_id
 export async function updateTag(
-  req: Request<UpdateTagParams, {}, UpdateTagBody>,
+  req: Request<UpdateTagParams, {}, UpdateTagBody, {}, {}>,
   res: Response<Tag | { error: string }>
 ) {
   try {
@@ -77,7 +82,7 @@ export async function updateTag(
 
 // DELETE /teams/:team_id/tags/:tag_id
 export async function deleteTag(
-  req: Request<DeleteTagParams>,
+  req: Request<DeleteTagParams, {}, {}, {}, {}>,
   res: Response<{ success: true } | { error: string }>
 ) {
   try {
@@ -92,7 +97,7 @@ export async function deleteTag(
 
 // POST /tasks/:task_id/tags
 export async function addTagToTask(
-  req: Request<AddTagToTaskParams, {}, AddTagToTaskBody>,
+  req: Request<AddTagToTaskParams, {}, AddTagToTaskBody, {}, {}>,
   res: Response<TaskTag | { error: string }>
 ) {
   try {
@@ -107,7 +112,7 @@ export async function addTagToTask(
 
 // DELETE /tasks/:task_id/tags/:tag_id
 export async function removeTagFromTask(
-  req: Request<RemoveTagFromTaskParams>,
+  req: Request<RemoveTagFromTaskParams, {}, {}, {}, {}>,
   res: Response<undefined | { error: string }>
 ) {
   try {
@@ -122,7 +127,7 @@ export async function removeTagFromTask(
 
 // GET /tasks/:task_id/tags
 export async function getTagsByTask(
-  req: Request<GetTagsByTaskParams>,
+  req: Request<GetTagsByTaskParams, {}, {}, {}, {}>,
   res: Response<Tag[] | { error: string }>
 ) {
   try {
@@ -134,13 +139,14 @@ export async function getTagsByTask(
   }
 }
 
-// GET /teams/:team_id/tags/:tag_id/tasks
+// GET /teams/:team_id/tags/:tag_id/tasks?page=&pageSize=
 export async function getTasksByTag(
-  req: Request<GetTasksByTagParams>,
-  res: Response<Task[] | { error: string }>
+  req: Request<GetTasksByTagParams, {}, {}, GetTasksByTagQuery, {}>,
+  res: Response<PaginatedResult<Task> | { error: string }>
 ) {
   try {
     const { tag_id, team_id } = req.params;
+    const { page, pageSize } = parsePaginationQuery(req.query);
     const tasks = await tagService.getTasksByTag(tag_id, team_id);
     res.json(tasks);
   } catch (err: any) {

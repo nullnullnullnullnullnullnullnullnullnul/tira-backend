@@ -1,6 +1,7 @@
 import pool from '../db';
 import { Tag, TaskTag } from '../models/tag';
 import { Task } from '../models/task';
+import { PaginatedResult, createPaginatedResult } from '../models/pagination';
 
 // Insert new tag
 export async function insertTag(tag: Tag): Promise<Tag | null> {
@@ -29,8 +30,10 @@ export async function deleteTag(tag_id: string, team_id: string): Promise<boolea
 // - team_id
 // - name
 export async function selectTags(
-  filter: { tag_id?: string; team_id?: string; name?: string } = {}
-): Promise<Tag[]> {
+  filter: { tag_id?: string; team_id?: string; name?: string } = {},
+  page: number = 1,
+  pageSize: number = 100
+): Promise<PaginatedResult<Tag>> {
   const conditions: string[] = [];
   const values: any[] = [];  
   Object.entries(filter).forEach(([key, value]) => {
@@ -39,14 +42,17 @@ export async function selectTags(
     conditions.push(`${key} = $${values.length}`);
   });
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  const offset = (page - 1) * pageSize;
   const result = await pool.query(`
-    SELECT *
+    SELECT *,
+      COUNT(*) OVER() as total_count
     FROM tags
     ${where}
     ORDER BY name ASC
+    LIMIT $${values.length - 1} OFFSET $${values.length} 
   `,
   values);
-  return result.rows;
+  return createPaginatedResult(result.rows, page, pageSize);
 }
 
 // Update tag:
@@ -104,14 +110,21 @@ export async function selectTagsByTask(task_id: string): Promise<Tag[]> {
 }
 
 // Select all tasks for a tag
-export async function selectTasksByTag(tag_id: string): Promise<Task[]> {
+export async function selectTasksByTag(
+  tag_id: string,
+  page: number = 1,
+  pageSize: number = 20
+): Promise<PaginatedResult<Task>> {
+  const offset = (page - 1) * pageSize;
   const result = await pool.query(`
-    SELECT t.*
+    SELECT t.*,
+           COUNT(*) OVER() as total_count
     FROM task_tags tt
     JOIN tasks t ON tt.task_id = t.task_id
     WHERE tt.tag_id = $1
     ORDER BY t.deadline DESC
+    LIMIT $2 OFFSET $3
   `,
-  [tag_id]);
-  return result.rows;
+  [tag_id, pageSize, offset]);
+  return createPaginatedResult<Task>(result.rows, page, pageSize);
 }

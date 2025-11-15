@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import * as teamService from '../services/teams.service';
 import { Team, TeamMember } from '../models/team';
 import { User } from '../models/user';
+import { PaginatedResult } from '../models/pagination';
 import {
   GetUserTeamsParams,
   UpdateTeamParams,
@@ -11,12 +12,15 @@ import {
   DeleteTeamParams,
   UpdateTeamBody,
   AddUserToTeamBody,
-  CreateTeamBody
+  CreateTeamBody,
+  GetUserTeamsQuery,
+  ListTeamMembersQuery
 } from '../dto/team.dto';
+import { parsePaginationQuery } from '../dto/pagination.dto';
 
 // POST /teams
 export async function createTeam(
-  req: Request<{}, {}, CreateTeamBody>,
+  req: Request<{}, {}, CreateTeamBody, {}, {}>,
   res: Response<Team | { error: string }>
 ) {
   try {
@@ -28,14 +32,15 @@ export async function createTeam(
   }
 }
 
-// GET /teams/users/:user_id
+// GET /teams/users/:user_id?page=&pageSize=
 export async function getUserTeams(
-  req: Request<GetUserTeamsParams>,
-  res: Response<Team[] | { error: string }>
+  req: Request<GetUserTeamsParams, {}, {}, GetUserTeamsQuery, {}>,
+  res: Response<PaginatedResult<Team> | { error: string }>
 ) {
   try {
     const { user_id } = req.params;
-    const teams = await teamService.getUserTeams(user_id);
+    const { page, pageSize } = parsePaginationQuery(req.query);
+    const teams = await teamService.getUserTeams(user_id, page, pageSize);
     res.json(teams);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -44,7 +49,7 @@ export async function getUserTeams(
 
 // PATCH /teams/:team_id
 export async function updateTeam(
-  req: Request<UpdateTeamParams, {}, UpdateTeamBody>,
+  req: Request<UpdateTeamParams, {}, UpdateTeamBody, {}, {}>,
   res: Response<Team | { error: string }>
 ) {
   try {
@@ -59,7 +64,7 @@ export async function updateTeam(
 
 // POST /teams/:team_id/members
 export async function addUserToTeam(
-  req: Request<AddUserToTeamParams, {}, AddUserToTeamBody>,
+  req: Request<AddUserToTeamParams, {}, AddUserToTeamBody, {}, {}>,
   res: Response<TeamMember | { error: string }>
 ) {
   try {
@@ -75,7 +80,7 @@ export async function addUserToTeam(
 // DELETE /teams/:team_id/members/:user_id
 // res undefined, 204 has no body
 export async function removeUserFromTeam(
-  req: Request<RemoveUserFromTeamParams>,
+  req: Request<RemoveUserFromTeamParams, {}, {}, {}, {}>,
   res: Response<undefined | { error: string }>
 ) {
   try {
@@ -88,14 +93,15 @@ export async function removeUserFromTeam(
   }
 }
 
-// GET /teams/:team_id/members
+// GET /teams/:team_id/members?page=&pageSize=
 export async function listTeamMembers(
-  req: Request<ListTeamMembersParams>,
-  res: Response<User[] | { error: string }>
+  req: Request<ListTeamMembersParams, {}, {}, ListTeamMembersQuery, {}>,
+  res: Response<PaginatedResult<User> | { error: string }>
 ) {
   try {
     const { team_id } = req.params;
-    const members = await teamService.listTeamMembers(team_id);
+    const { page, pageSize } = parsePaginationQuery(req.query);
+    const members = await teamService.listTeamMembers(team_id, page, pageSize);
     res.json(members);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -104,7 +110,7 @@ export async function listTeamMembers(
 
 // DELETE /teams/:team_id
 export async function deleteTeam(
-  req: Request<DeleteTeamParams>,
+  req: Request<DeleteTeamParams, {}, {}, {}, {}>,
   res: Response<{ success: true } | { error: string }>
 ) {
   try {

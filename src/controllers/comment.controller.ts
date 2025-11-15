@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import * as commentService from '../services/comments.service';
 import { Comment } from '../models/comment';
+import { PaginatedResult } from '../models/pagination';
+import { parsePaginationQuery, PaginationQuery } from '../dto/pagination.dto';
 import {
   CreateCommentParams,
   CreateCommentBody,
@@ -12,7 +14,7 @@ import {
 
 // POST /comments/tasks/:task_id
 export async function createComment(
-  req: Request<CreateCommentParams, {}, CreateCommentBody>,
+  req: Request<CreateCommentParams, {}, CreateCommentBody, {}, {}>,
   res: Response<Comment | { error: string }>
 ) {
   try {
@@ -25,21 +27,20 @@ export async function createComment(
   }
 }
 
-// GET /comments?comment_id=&task_id=&author_id=&offset=&limit=
+// GET /comments?comment_id=&task_id=&author_id=&page=&pageSize=
 export async function getComments(
-  req: Request<{}, {}, {}, GetCommentsQuery>,
-  res: Response<Comment[] | { error: string }>
+  req: Request<{}, {}, {}, GetCommentsQuery, {}>,
+  res: Response<PaginatedResult<Comment> | { error: string }>
 ) {
   try {
-    const { comment_id, task_id, author_id, offset, limit } = req.query;
+    const { comment_id, task_id, author_id } = req.query;
+    const { page, pageSize } = parsePaginationQuery(req.query);
     const filter = {
       ...(comment_id && { comment_id }),
       ...(task_id && { task_id }),
       ...(author_id && { author_id })
     };
-    const offsetNum = offset ? parseInt(offset) : 0;
-    const limitNum = limit ? parseInt(limit) : 20;
-    const comments = await commentService.getComments(filter, offsetNum, limitNum);
+    const comments = await commentService.getComments(filter, page, pageSize);
     res.json(comments);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -48,7 +49,7 @@ export async function getComments(
 
 // PATCH /comments/:comment_id
 export async function updateComment(
-  req: Request<UpdateCommentParams, {}, UpdateCommentBody>,
+  req: Request<UpdateCommentParams, {}, UpdateCommentBody, {}, {}>,
   res: Response<Comment | { error: string }>
 ) {
   try {
@@ -63,7 +64,7 @@ export async function updateComment(
 
 // DELETE /comments/:comment_id
 export async function deleteComment(
-  req: Request<DeleteCommentParams>,
+  req: Request<DeleteCommentParams, {}, {}, {}, {}>,
   res: Response<{ success: true } | { error: string }>
 ) {
   try {

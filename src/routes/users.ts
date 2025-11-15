@@ -7,7 +7,7 @@ import { DeleteUserParams, UpdateUserParams } from '../dto/user.dto';
 const router = Router();
 
 // List users with optional filters
-// GET /users?username=&email=&role=&user_id=&offset=&limit=
+// GET /users?username=&email=&role=&user_id=&page=&pageSize=
 router.get('/', userController.listUsers);
 
 // Create a new user - POST /users

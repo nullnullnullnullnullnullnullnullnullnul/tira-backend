@@ -24,7 +24,8 @@ router.post(
   tagController.createTag
 );
 
-// Get all tags for a team - GET /tags/teams/:team_id
+// Get all tags for a team
+// GET /tags/teams/:team_id?page=&pageSize=
 router.get(
   '/teams/:team_id',
   requireParams<GetTagsByTeamParams>(['team_id']),
@@ -53,7 +54,8 @@ router.delete(
   tagController.deleteTag
 );
 
-// Get all tasks with a specific tag - GET /tags/teams/:team_id/:tag_id/tasks
+// Get all tasks with a specific tag
+// GET /tags/teams/:team_id/:tag_id/tasks?page=&pageSize=
 router.get(
   '/teams/:team_id/:tag_id/tasks',
   requireParams<GetTasksByTagParams>(['team_id', 'tag_id']),

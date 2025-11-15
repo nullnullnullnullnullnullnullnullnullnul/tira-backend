@@ -1,3 +1,5 @@
+import { PaginationQuery } from "./pagination.dto";
+
 export interface GetUserTeamsParams extends Record<string, string> {
   user_id: string;
 }
@@ -23,6 +25,18 @@ export interface DeleteTeamParams extends Record<string, string> {
   team_id: string;
 }
 
-export interface UpdateTeamBody { name: string }
-export interface AddUserToTeamBody { user_id: string }
-export interface CreateTeamBody { owner_id: string; name: string; }
+export interface UpdateTeamBody {
+  name: string
+}
+
+export interface AddUserToTeamBody {
+  user_id: string
+}
+
+export interface CreateTeamBody {
+  owner_id: string;
+  name: string;
+}
+
+export interface GetUserTeamsQuery extends PaginationQuery{}
+export interface ListTeamMembersQuery extends PaginationQuery{}

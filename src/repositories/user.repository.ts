@@ -1,5 +1,6 @@
 import pool from '../db';
 import { User, UserFilter } from '../models/user';
+import { PaginatedResult, createPaginatedResult } from '../models/pagination';
 
 // All users and filter by:
 // - Id
@@ -10,9 +11,9 @@ import { User, UserFilter } from '../models/user';
 // - offset and limits
 export async function selectUsers(
   filter: UserFilter = {},
-  offset: number = 0, // offset as rows
-  limit: number = 20
-): Promise<User[]> {
+  page: number = 1,
+  pageSize: number = 100
+): Promise<PaginatedResult<User>> {
   const conditions: string[] = [];
   const values: any[] = [];
   Object.entries(filter).forEach(([key, value]) => {
@@ -26,9 +27,11 @@ export async function selectUsers(
     }
   })
   const where: string = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-  values.push(limit, offset);
+  const offset: number = (page - 1) * pageSize;
+  values.push(pageSize, offset);
   const result = await pool.query(`
-    SELECT *
+    SELECT *,
+      COUNT(*) OVER() as total_count
     FROM users
     ${where}
     ORDER BY created_at DESC
@@ -36,7 +39,7 @@ export async function selectUsers(
     `,
     values
   );
-  return result.rows;
+  return createPaginatedResult<User>(result.rows, page, pageSize);
 }
 
 // Add user

@@ -4,6 +4,7 @@ import * as teamRepository from '../repositories/team.repository';
 import * as taskRepository from '../repositories/task.repository';
 import { Tag, TaskTag } from '../models/tag';
 import { Task } from '../models/task';
+import { PaginatedResult } from '../models/pagination';
 
 const tagNameRegex = /^[A-Za-z0-9 _-]{1,20}$/;
 
@@ -22,10 +23,10 @@ export async function createTag(
 ): Promise<Tag> {
   if (!isValidTagName(name)) throw new Error('Invalid tag name');
   // Check if team exists
-  const team = (await teamRepository.selectTeams({ team_id }, 0, 1))[0];
+  const team = (await teamRepository.selectTeams({ team_id }, 1, 1)).data[0];
   if (!team) throw new Error('Team not found');
   // Check if tag name already exists in this team
-  const existingTag = (await tagRepository.selectTags({ name, team_id }))[0];
+  const existingTag = (await tagRepository.selectTags({ name, team_id }, 1, 1)).data[0];
   if (existingTag) throw new Error('Tag name already exists in this team');
   const tag: Tag = {
     tag_id: ulid(),
@@ -39,16 +40,20 @@ export async function createTag(
 
 // Get all tags for a team
 // todo: validate permission to view team tags
-export async function getTagsByTeam(team_id: string): Promise<Tag[]> {
-  const team = (await teamRepository.selectTeams({ team_id }, 0, 1))[0];
+export async function getTagsByTeam(
+  team_id: string,
+  page: number = 1,
+  pageSize: number = 20
+): Promise<PaginatedResult<Tag>> {
+  const team = (await teamRepository.selectTeams({ team_id }, 1, 1)).data[0];
   if (!team) throw new Error('Team not found');
-  return await tagRepository.selectTags({ team_id });
+  return await tagRepository.selectTags({ team_id }, page, pageSize);
 }
 
 // Get tag by ID
 // todo: validate permission to view tag
 export async function getTagById(tag_id: string, team_id: string): Promise<Tag> {
-  const tag = (await tagRepository.selectTags({ tag_id, team_id }))[0];
+  const tag = (await tagRepository.selectTags({ tag_id, team_id }, 1, 1)).data[0];
   if (!tag) throw new Error('Tag not found');
   return tag;
 }
@@ -64,7 +69,7 @@ export async function updateTag(
   // Check if tag exists
   await getTagById(tag_id, team_id);
   // Check if new name already exists in this team
-  const existingTag = (await tagRepository.selectTags({ name: newName, team_id }))[0];
+  const existingTag = (await tagRepository.selectTags({ name: newName, team_id }, 1, 1)).data[0];
   if (existingTag && existingTag.tag_id !== tag_id) {
     throw new Error('Tag name already exists in this team');
   }
@@ -88,10 +93,10 @@ export async function addTagToTask(
   tag_id: string
 ): Promise<TaskTag> {
   // Check if task exists
-  const task = (await taskRepository.selectTask({ task_id }, 0, 1))[0];
+  const task = (await taskRepository.selectTask({ task_id }, 1, 1)).data[0];
   if (!task) throw new Error('Task not found');
   // Check if tag exists and belongs to the same team as the task
-  const tag = (await tagRepository.selectTags({ tag_id, team_id: task.team_id }))[0];
+  const tag = (await tagRepository.selectTags({ tag_id, team_id: task.team_id }, 1, 1)).data[0];
   if (!tag) throw new Error('Tag not found');
   const taskTag: TaskTag = {
     task_tags_id: ulid(),
@@ -110,10 +115,10 @@ export async function removeTagFromTask(
   tag_id: string
 ): Promise<boolean> {
   // Check if task exists
-  const task = (await taskRepository.selectTask({ task_id }, 0, 1))[0];
+  const task = (await taskRepository.selectTask({ task_id }, 1, 1)).data[0];
   if (!task) throw new Error('Task not found');
   // Check if tag exists
-  const tag = (await tagRepository.selectTags({ tag_id, team_id: task.team_id }))[0];
+  const tag = (await tagRepository.selectTags({ tag_id, team_id: task.team_id }, 1, 1)).data[0];
   if (!tag) throw new Error('Tag not found');
   return await tagRepository.deleteTaskTag(task_id, tag_id);
 }
@@ -122,16 +127,21 @@ export async function removeTagFromTask(
 // todo: validate permission to view task tags
 export async function getTagsByTask(task_id: string): Promise<Tag[]> {
   // Check if task exists
-  const task = (await taskRepository.selectTask({ task_id }, 0, 1))[0];
+  const task = (await taskRepository.selectTask({ task_id }, 1, 1)).data[0];
   if (!task) throw new Error('Task not found');
   return await tagRepository.selectTagsByTask(task_id);
 }
 
 // Get all tasks for a tag
 // todo: validate permission to view tag tasks
-export async function getTasksByTag(tag_id: string, team_id: string): Promise<Task[]> {
+export async function getTasksByTag(
+  tag_id: string,
+  team_id: string,
+  page: number = 1,
+  pageSize: number = 20
+): Promise<PaginatedResult<Task>> {
   // Check if tag exists
-  const tag = (await tagRepository.selectTags({ tag_id, team_id }))[0];
+  const tag = (await tagRepository.selectTags({ tag_id, team_id }, 1, 1)).data[0];
   if (!tag) throw new Error('Tag not found');
-  return await tagRepository.selectTasksByTag(tag_id);
+  return await tagRepository.selectTasksByTag(tag_id, page, pageSize);
 }

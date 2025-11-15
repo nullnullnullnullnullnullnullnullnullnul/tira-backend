@@ -21,6 +21,7 @@ router.post(
 );
 
 // Get teams a user is in
+// GET /teams/user/:user_id?page=&pageSize=
 router.get(
   '/user/:user_id',
   requireParams<GetUserTeamsParams>(['user_id']),
@@ -51,6 +52,7 @@ router.delete(
 );
 
 // Lists team members
+// GET /teams/:team_id/members?page=&pageSize=
 router.get(
   '/:team_id/members',
   requireParams<ListTeamMembersParams>(['team_id']),

@@ -1,12 +1,11 @@
 import { UserRole } from '../models/user';
+import { PaginationQuery } from './pagination.dto';
 
-export interface ListUsersQuery {
+export interface ListUsersQuery extends PaginationQuery {
   username?: string;
   email?: string;
   role?: UserRole;
   user_id?: string;
-  offset?: number;
-  limit?: number;
 }
 
 export interface CreateUserBody {

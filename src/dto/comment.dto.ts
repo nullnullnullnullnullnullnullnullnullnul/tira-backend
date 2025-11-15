@@ -1,3 +1,5 @@
+import { PaginationQuery } from "./pagination.dto";
+
 export interface CreateCommentParams extends Record<string, string> {
   task_id: string;
 }
@@ -23,10 +25,8 @@ export interface UpdateCommentBody {
   content: string;
 }
 
-export interface GetCommentsQuery {
+export interface GetCommentsQuery extends PaginationQuery {
   comment_id?: string;
   task_id?: string;
   author_id?: string;
-  offset?: string;
-  limit?: string;
 }

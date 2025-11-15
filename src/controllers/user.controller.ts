@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { UserFilter, UserRole } from '../models/user';
 import * as userService from '../services/users.service';
 import { UserSafe } from "../services/users.service";
+import { PaginatedResult } from "../models/pagination";
 import {
   ListUsersQuery,
   CreateUserBody,
@@ -9,23 +10,26 @@ import {
   DeleteUserParams,
   UpdateUserParams
 } from '../dto/user.dto';
+import { parsePaginationQuery } from "../dto/pagination.dto";
 
-// GET /users?username=&email=&role=&user_id=&offset=&limit=
+// GET /users?username=&email=&role=&user_id=&page=&pageSize=
 export async function listUsers(
-  req: Request<{}, {}, {}, ListUsersQuery>,
-  res: Response<UserSafe[] | { error: string }>
+  req: Request<{}, {}, {}, ListUsersQuery, {}>,
+  res: Response<PaginatedResult<UserSafe> | { error: string }>
 ) {
   try {
-    const { username, email, role, user_id, offset, limit } = req.query;
-    const filter: UserFilter = {};
-    if (username) filter.username = String(username);
-    if (email) filter.email = String(email);
-    if (role) filter.role = String(role) as UserRole;
-    if (user_id) filter.user_id = String(user_id);
-    const users: UserSafe[] = await userService.listUsers(
+    const { username, email, role, user_id } = req.query;
+    const { page, pageSize } = parsePaginationQuery(req.query);
+    const filter: UserFilter = {
+      ...(username && { username }),
+      ...(email && { email }),
+      ...(role && { role: role as UserRole}),
+      ...(user_id && { user_id })
+    };
+    const users = await userService.listUsers(
       filter,
-      Number(offset) || 0,
-      Number(limit) || 20
+      page,
+      pageSize
     );
     res.json(users);
   } catch (err: any) {
@@ -35,7 +39,7 @@ export async function listUsers(
 
 // POST /users
 export async function createUser(
-  req: Request<{}, {}, CreateUserBody>,
+  req: Request<{}, {}, CreateUserBody, {}, {}>,
   res: Response<UserSafe | { error: string }>
 ) {
   try {
@@ -50,7 +54,7 @@ export async function createUser(
 
 // DELETE /users/:user_id
 export async function deleteUser(
-  req: Request<DeleteUserParams>,
+  req: Request<DeleteUserParams, {}, {}, {}, {}>,
   res: Response<{} | { error: string }>
 ) {
   try {
@@ -65,16 +69,17 @@ export async function deleteUser(
 
 // PATCH /users/:user_id
 export async function updateUser(
-  req: Request<UpdateUserParams, {}, UpdateUserBody>,
+  req: Request<UpdateUserParams, {}, UpdateUserBody, {}, {}>,
   res: Response<UserSafe | { error: string }>
 ) {
   try {
     const { user_id } = req.params;
     const { username, email, password } = req.body;
-    const fields: UpdateUserBody = {};
-    if (username) fields.username = username;
-    if (email) fields.email = email;
-    if (password) fields.password = password;
+    const fields: UpdateUserBody = {
+      ...(username && { username }),
+      ...(email && { email }),
+      ...(password && { password })
+    };
     if (Object.keys(fields).length === 0) {
       return res.status(400).json({ error: "No fields provided to update" });
     }

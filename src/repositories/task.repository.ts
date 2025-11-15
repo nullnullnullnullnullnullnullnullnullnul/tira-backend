@@ -1,5 +1,6 @@
 import pool from '../db';
 import { Task, TaskFilter } from '../models/task';
+import { PaginatedResult, createPaginatedResult } from '../models/pagination';
 
 // Select task by:
 // - name
@@ -13,13 +14,12 @@ import { Task, TaskFilter } from '../models/task';
 // - status
 // - priority
 // - deadline
-// - pagination: limit, offset
 // FIX DEADLINE FILTER
 export async function selectTask(
   filter: TaskFilter = {},
-  offset: number = 0,
-  limit: number = 20
-): Promise<Task[]> {
+  page: number = 1,
+  pageSize: number = 100
+): Promise<PaginatedResult<Task>> {
   const conditions: string[] = [];
   const values: any[] = [];
   Object.entries(filter).forEach(([key, value]) => {
@@ -42,9 +42,11 @@ export async function selectTask(
   });
   const where: string = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   // Pagination
-  values.push(limit, offset);
+  const offset = (page - 1) * pageSize;
+  values.push(pageSize, offset);
   const result = await pool.query(`
-    SELECT *
+    SELECT *,
+      COUNT(*) OVER() as total_count
     FROM tasks
     ${where}
     ORDER BY deadline DESC
@@ -52,7 +54,7 @@ export async function selectTask(
     `,
     values
   );
-  return result.rows;
+  return createPaginatedResult<Task>(result.rows, page, pageSize);
 }
 
 // Add task

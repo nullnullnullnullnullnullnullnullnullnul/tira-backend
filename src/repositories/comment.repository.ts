@@ -1,5 +1,6 @@
 import pool from '../db';
 import { Comment, CommentFilter } from '../models/comment';
+import { PaginatedResult, createPaginatedResult } from '../models/pagination';
 
 // Insert new comment
 export async function insertComment(comment: Comment): Promise<Comment | null> {
@@ -28,9 +29,9 @@ export async function deleteComment(comment_id: string): Promise<boolean> {
 // - author_id
 export async function selectComments(
   filter: CommentFilter = {},
-  offset: number = 0,
-  limit: number = 20
-): Promise<Comment[]> {
+  page: number = 1,
+  pageSize: number = 100
+): Promise<PaginatedResult<Comment>> {
   const conditions: string[] = [];
   const values: any[] = [];
   Object.entries(filter).forEach(([key, value]) => {
@@ -39,16 +40,18 @@ export async function selectComments(
     conditions.push(`${key} = $${values.length}`);
   });
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-  values.push(limit, offset);
+  const offset = (page - 1) * pageSize;
+  values.push(pageSize, offset);
   const result = await pool.query(`
-    SELECT *
+    SELECT *,
+      COUNT(*) OVER() as total_count
     FROM comments
     ${where}
     ORDER BY created_at DESC
     LIMIT $${values.length - 1} OFFSET $${values.length}
   `,
     values);
-  return result.rows;
+  return createPaginatedResult<Comment>(result.rows, page, pageSize);
 }
 
 // Update comment content

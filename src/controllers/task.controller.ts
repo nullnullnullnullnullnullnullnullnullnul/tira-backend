@@ -2,12 +2,19 @@ import { Request, Response } from "express";
 import { TaskFilter, TaskStatus, TaskPriority } from '../models/task';
 import * as taskService from '../services/tasks.service';
 import { Task } from '../models/task';
-import { ListTasksQuery, CreateTaskBody, UpdateTaskBody, TaskParams } from '../dto/task.dto';
+import { PaginatedResult } from "../models/pagination";
+import { parsePaginationQuery } from "../dto/pagination.dto";
+import {
+  ListTasksQuery,
+  CreateTaskBody,
+  UpdateTaskBody,
+  TaskParams
+} from '../dto/task.dto';
 
-// GET /tasks?task_id=&team_id=&assigned_to=&created_by=&title=&status=&priority=&date_start=&date_end=&offset=&limit=
+// GET /tasks?task_id=&team_id=&assigned_to=&created_by=&title=&status=&priority=&date_start=&date_end=&page=&pageSize=
 export async function listTasks(
-  req: Request<{}, {}, {}, ListTasksQuery>,
-  res: Response<Task[] | { error: string }>
+  req: Request<{}, {}, {}, ListTasksQuery, {}>,
+  res: Response<PaginatedResult<Task> | { error: string }>
 ) {
   try {
     const {
@@ -19,24 +26,24 @@ export async function listTasks(
       status,
       priority,
       date_start,
-      date_end,
-      offset,
-      limit
+      date_end
     } = req.query;
-    const filter: TaskFilter = {};
-    if (task_id) filter.task_id = String(task_id);
-    if (team_id) filter.team_id = String(team_id);
-    if (assigned_to) filter.assigned_to = String(assigned_to);
-    if (created_by) filter.created_by = String(created_by);
-    if (title) filter.title = String(title);
-    if (status) filter.status = String(status) as TaskStatus;
-    if (priority) filter.priority = String(priority) as TaskPriority;
-    if (date_start) filter.date_start = new Date(String(date_start));
-    if (date_end) filter.date_end = new Date(String(date_end));
-    const tasks: Task[] = await taskService.getTasks(
+    const { page, pageSize } = parsePaginationQuery(req.query);
+    const filter: TaskFilter = {
+      ...(task_id && { task_id: String(task_id) }),
+      ...(team_id && { team_id: String(team_id) }),
+      ...(assigned_to && { assigned_to: String(assigned_to) }),
+      ...(created_by && { created_by: String(created_by) }),
+      ...(title && { title: String(title) }),
+      ...(status && { status: String(status) as TaskStatus }),
+      ...(priority && { priority: String(priority) as TaskPriority }),
+      ...(date_start && { date_start: new Date(String(date_start)) }),
+      ...(date_end && { date_end: new Date(String(date_end)) })
+    };
+    const tasks = await taskService.getTasks(
       filter,
-      Number(offset) || 0,
-      Number(limit) || 20
+      page,
+      pageSize
     );
     res.json(tasks);
   } catch (err: any) {
@@ -46,7 +53,7 @@ export async function listTasks(
 
 // GET /tasks/:task_id
 export async function getTask(
-  req: Request<TaskParams>,
+  req: Request<TaskParams, {}, {}, {}, {}>,
   res: Response<Task | { error: string }>
 ) {
   try {
@@ -60,11 +67,10 @@ export async function getTask(
 
 // POST /tasks
 export async function createTask(
-  req: Request<{}, {}, CreateTaskBody>,
+  req: Request<{}, {}, CreateTaskBody, {}, {}>,
   res: Response<Task | { error: string }>
 ) {
   try {
-    // TODO: Get created_by from authenticated user (req.user)
     const {
       created_by,
       team_id,
@@ -94,7 +100,7 @@ export async function createTask(
 
 // PATCH /tasks/:task_id
 export async function updateTask(
-  req: Request<TaskParams, {}, UpdateTaskBody>,
+  req: Request<TaskParams, {}, UpdateTaskBody, {}, {}>,
   res: Response<Task | { error: string }>
 ) {
   try {
@@ -108,7 +114,7 @@ export async function updateTask(
 
 // DELETE /tasks/:task_id
 export async function deleteTask(
-  req: Request<TaskParams>,
+  req: Request<TaskParams, {}, {}, {}, {}>,
   res: Response<{} | { error: string }>
 ) {
   try {

@@ -1,6 +1,7 @@
 import { TaskStatus, TaskPriority } from '../models/task';
+import { PaginationQuery } from './pagination.dto';
 
-export interface ListTasksQuery {
+export interface ListTasksQuery extends PaginationQuery {
   task_id?: string;
   team_id?: string;
   assigned_to?: string;
@@ -10,8 +11,6 @@ export interface ListTasksQuery {
   priority?: TaskPriority;
   date_start?: string;
   date_end?: string;
-  offset?: string;
-  limit?: string;
 }
 
 export interface CreateTaskBody {

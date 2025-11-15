@@ -11,7 +11,7 @@ import {
 const router = Router();
 
 // List comments with optional filters
-// GET /comments?comment_id=&task_id=&author_id=&offset=&limit=
+// GET /comments?comment_id=&task_id=&author_id=&page=&pageSize=
 router.get('/', commentController.getComments);
 
 // Create a new comment - POST /comments/tasks/:task_id

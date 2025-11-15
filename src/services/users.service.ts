@@ -2,11 +2,11 @@ import { ulid } from 'ulid';
 import bcrypt from "bcrypt";
 import * as userRepository from '../repositories/user.repository';
 import { User, UserRole, validRoles, UserFilter } from '../models/user';
+import { PaginatedResult } from '../models/pagination';
 
 const SALT: number = 10;
 export type UserSafe = Omit<User, 'pwd_hash'>;
 
-// HELPERS
 const usernameRegex: RegExp = /^[a-z0-9]{3,16}$/i;
 const emailRegex: RegExp = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
 const passwordRegex: RegExp = /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,16}$/;
@@ -46,11 +46,15 @@ function isValidPassword(pwd: string): boolean {
 // todo: validate permission to view all user data
 export async function listUsers(
   filter: UserFilter = {},
-  offset: number = 0,
-  limit: number = 20
-): Promise<UserSafe[]> {
-  const users: User[] = await userRepository.selectUsers(filter, offset, limit);
-  return users.map(({ pwd_hash, ...safe }) => safe);
+  page: number = 1,
+  pageSize: number = 20
+): Promise<PaginatedResult<UserSafe>> {
+  const result: PaginatedResult<User> = await userRepository.selectUsers(filter, page, pageSize);
+  const safe: UserSafe[] = result.data.map(({ pwd_hash, ...safe }) => safe);
+  return {
+    data: safe,
+    pagination: result.pagination
+  };
 }
 
 // Add user
@@ -86,8 +90,8 @@ export async function insertUser(
 // Deletes user
 // todo: validate permission to delete user's data
 export async function deleteUser(user_id: string): Promise<boolean> {
-  const user: UserSafe | undefined = (await listUsers({ user_id: user_id }, 0, 1))[0];
-  if (!user) throw new Error('User not found');
+  const result = await listUsers({ user_id: user_id }, 1, 1);
+  if (result.data.length === 0) throw new Error('User not found');
   const deleted: boolean = await userRepository.deleteUser(user_id);
   if (!deleted) throw new Error('Failed to delete user');
   return deleted;
@@ -101,7 +105,7 @@ export async function updateUser(
 ): Promise<UserSafe> {
   if (!fields) throw new Error('No fields given to update');
   // Checks user existence
-  const user: UserSafe | undefined = (await userRepository.selectUsers({ user_id: user_id }, 0, 1))[0];
+  const user = await userRepository.selectUsers({ user_id: user_id }, 1, 1);
   if (!user) throw new Error('User not found');
   const updates: Partial<User> = {};
   if (fields.username) {

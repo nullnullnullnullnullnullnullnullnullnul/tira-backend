@@ -3,6 +3,7 @@ import * as taskRepository from '../repositories/task.repository';
 import * as teamRepository from '../repositories/team.repository';
 import * as userRepository from '../repositories/user.repository';
 import { Task, TaskFilter, TaskStatus, TaskPriority, validPriorities, validStatuses } from '../models/task';
+import { PaginatedResult } from '../models/pagination';
 
 const titleRegex = /^[a-z0-9 ]{3,100}$/i;
 
@@ -29,7 +30,6 @@ function isValidDeadline(deadline: string): boolean {
 }
 
 // Create a task
-// todo: validate permission to create task
 export async function createTask(
   created_by: string,
   fields: Omit<Task, 'task_id' | 'created_by' | 'last_modified_at'>
@@ -39,17 +39,17 @@ export async function createTask(
   if (!isValidPriority(fields.priority)) throw new Error('Invalid task priority');
   if (!isValidDeadline(fields.deadline)) throw new Error('Invalid deadline');
   // Check if creator exists
-  const creator = (await userRepository.selectUsers({ user_id: created_by }, 0, 1))[0];
+  const creator = (await userRepository.selectUsers({ user_id: created_by }, 1, 1)).data[0];
   if (!creator) throw new Error('User not found');
   // Check if team exists
-  const team = (await teamRepository.selectTeams({ team_id: fields.team_id }, 0, 1))[0];
+  const team = (await teamRepository.selectTeams({ team_id: fields.team_id }, 1, 1)).data[0];
   if (!team) throw new Error('Team not found');
   // Check if assigned user exists
-  const assignedUser = (await userRepository.selectUsers({ user_id: fields.assigned_to }, 0, 1))[0];
+  const assignedUser = (await userRepository.selectUsers({ user_id: fields.assigned_to }, 1, 1)).data[0];
   if (!assignedUser) throw new Error('Assigned user not found');
   // Check if assigned user is a member of the team
   const members = await teamRepository.selectMembers(fields.team_id);
-  if (!members.find(m => m.user_id === fields.assigned_to)) {
+  if (!members.data.find(m => m.user_id === fields.assigned_to)) {
     throw new Error('Assigned user is not a member of the team');
   }
   const task: Task = {
@@ -71,22 +71,20 @@ export async function createTask(
 }
 
 // Get tasks with filters
-// todo: validate permission to view tasks
 // FIX DEADLINE FILTER
 export async function getTasks(
   filter: TaskFilter = {},
-  offset: number = 0,
-  limit: number = 20
-): Promise<Task[]> {
-  return await taskRepository.selectTask(filter, offset, limit);
+  page: number = 1,
+  pageSize: number = 20
+): Promise<PaginatedResult<Task>> {
+  return await taskRepository.selectTask(filter, page, pageSize);
 }
 
 // Get a single task by ID
-// todo: validate permission to view task
 export async function getTaskById(task_id: string): Promise<Task> {
-  const task = (await taskRepository.selectTask({ task_id }, 0, 1))[0];
-  if (!task) throw new Error('Task not found');
-  return task;
+  const result = await taskRepository.selectTask({ task_id }, 1, 1);
+  if (!result.data[0]) throw new Error('Task not found');
+  return result.data[0];
 }
 
 // Update task
@@ -113,10 +111,10 @@ export async function updateTask(
   const task = await getTaskById(task_id);
   // If updating assigned_to, validate the user exists and is a team member
   if (fields.assigned_to !== undefined) {
-    const assignedUser = (await userRepository.selectUsers({ user_id: fields.assigned_to }, 0, 1))[0];
+    const assignedUser = (await userRepository.selectUsers({ user_id: fields.assigned_to }, 1, 1)).data[0];
     if (!assignedUser) throw new Error('Assigned user not found');
     const members = await teamRepository.selectMembers(task.team_id);
-    if (!members.find(m => m.user_id === fields.assigned_to)) {
+    if (!members.data.find(m => m.user_id === fields.assigned_to)) {
       throw new Error('Assigned user is not a member of the team');
     }
   }
@@ -126,7 +124,6 @@ export async function updateTask(
 }
 
 // Delete task
-// todo: validate permission to delete task
 export async function deleteTask(task_id: string): Promise<boolean> {
   await getTaskById(task_id); // Already throws "task not found"
   return await taskRepository.deleteTask(task_id);

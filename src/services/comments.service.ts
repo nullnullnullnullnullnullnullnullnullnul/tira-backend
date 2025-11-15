@@ -3,6 +3,7 @@ import * as commentRepository from '../repositories/comment.repository';
 import * as taskRepository from '../repositories/task.repository';
 import * as userRepository from '../repositories/user.repository';
 import { Comment, CommentFilter } from '../models/comment';
+import { PaginatedResult } from '../models/pagination';
 
 // Comment content validation:
 // - Between 1 and 300 (inclusive) characters long
@@ -21,10 +22,10 @@ export async function createComment(
     throw new Error('Comment content must be between 1 and 300 characters');
   }  
   // Check if task exists
-  const task = (await taskRepository.selectTask({ task_id }, 0, 1))[0];
+  const task = (await taskRepository.selectTask({ task_id }, 1, 1)).data[0];
   if (!task) throw new Error('Task not found');
   // Check if author exists
-  const author = (await userRepository.selectUsers({ user_id: author_id }, 0, 1))[0];
+  const author = (await userRepository.selectUsers({ user_id: author_id }, 1, 1)).data[0];
   if (!author) throw new Error('User not found');
   const comment: Comment = {
     comment_id: ulid(),
@@ -39,29 +40,27 @@ export async function createComment(
 }
 
 // Get comments with optional filters
-// todo: validate permissions based on filter type
 export async function getComments(
   filter: CommentFilter = {},
-  offset: number = 0,
-  limit: number = 20
-): Promise<Comment[]> {
+  page: number = 1,
+  pageSize: number = 20
+): Promise<PaginatedResult<Comment>> {
   if (filter.task_id) {
-    const task = (await taskRepository.selectTask({ task_id: filter.task_id }, 0, 1))[0];
+    const task = (await taskRepository.selectTask({ task_id: filter.task_id }, 1, 1)).data[0];
     if (!task) throw new Error('Task not found');
   }
   if (filter.author_id) {
-    const author = (await userRepository.selectUsers({ user_id: filter.author_id }, 0, 1))[0];
+    const author = (await userRepository.selectUsers({ user_id: filter.author_id }, 1, 1)).data[0];
     if (!author) throw new Error('User not found');
   }
-  const comments = await commentRepository.selectComments(filter, offset, limit);
-  if (filter.comment_id && comments.length === 0) {
+  const result = await commentRepository.selectComments(filter, page, pageSize);
+  if (filter.comment_id && result.data.length === 0) {
     throw new Error('Comment not found');
   }
-  return comments;
+  return result;
 }
 
 // Update comment content
-// todo: validate permission to update comment (must be author or team leader)
 export async function updateComment(
   comment_id: string,
   content: string
@@ -77,7 +76,6 @@ export async function updateComment(
 }
 
 // Delete comment
-// todo: validate permission to delete comment (must be author or team leader)
 export async function deleteComment(comment_id: string): Promise<boolean> {
   // Check if comment exists
   await getComments({ comment_id }, 0, 1);
