@@ -4,6 +4,7 @@ import * as userRepository from '../repositories/user.repository';
 import { Team, Invite, TeamMember } from '../models/team';
 import { User, UserRole, validRoles } from '../models/user';
 import { PaginatedResult } from '../models/pagination';
+import { NotFoundError, ValidationError, ForbiddenError, ConflictError, InternalServerError } from '../utils/AppError';
 
 const teamNameRegex = /^[A-Za-z0-9 _-]{3,50}$/;
 
@@ -19,11 +20,11 @@ export async function createTeam(
   owner_id: string,
   fields: Omit<Team, "team_id" | "owner_id" | "created_at">
 ): Promise<Team> {
-  if (!isValidTeamName(fields.name)) throw new Error('Invalid team name');
+  if (!isValidTeamName(fields.name)) throw new ValidationError('Invalid team name');
   // Checks if owner exists and has leader role
   const owner = (await userRepository.selectUsers({ user_id: owner_id }, 1, 1)).data[0];
-  if (!owner) throw new Error('User not found');
-  if (owner.role !== 'leader') throw new Error('User lacks permissions');
+  if (!owner) throw new NotFoundError('User');
+  if (owner.role !== 'leader') throw new ForbiddenError('User lacks permissions to create team');
   // Creates team
   const team: Team = {
     team_id: ulid(),
@@ -32,7 +33,7 @@ export async function createTeam(
     created_at: new Date().toISOString(),
   };
   const newTeam = await teamRepository.insertTeam(team);
-  if (!newTeam) throw new Error('Error creating the team');
+  if (!newTeam) throw new InternalServerError('Failed to create team');
   // Inserts the owner as the first member of the team
   await addUserToTeam(team.team_id, owner_id);
   return newTeam;
@@ -54,12 +55,12 @@ export async function updateTeam(
   team_id: string,
   fields: Partial<Omit<Team, "team_id" | "owner_id" | "created_at">>
 ): Promise<Team> {
-  if (!fields.name) throw new Error('No fields to update')
-  if (!isValidTeamName(fields.name)) throw new Error('Invalid team name');
+  if (!fields.name) throw new ValidationError('No fields to update')
+  if (!isValidTeamName(fields.name)) throw new ValidationError('Invalid team name');
   const team = (await teamRepository.selectTeams({ team_id: team_id }, 1, 1)).data[0];
-  if (!team) throw new Error('Team not found');
+  if (!team) throw new NotFoundError('Team');
   const updated = await teamRepository.updateTeam(team_id, fields);
-  if (!updated) throw new Error('Error updating team');
+  if (!updated) throw new NotFoundError('Team');
   return updated;
 }
 
@@ -71,14 +72,14 @@ export async function addUserToTeam(
 ): Promise<TeamMember> {
   // User exists
   const user = (await userRepository.selectUsers({ user_id: user_id }, 1, 1)).data[0];
-  if (!user) throw new Error('User not found');
-  if (!validRoles.includes(user.role as UserRole)) throw new Error('Invalid role');
+  if (!user) throw new NotFoundError('User');
+  if (!validRoles.includes(user.role as UserRole)) throw new ValidationError('Invalid role');
   // Team exists
   const team = (await teamRepository.selectTeams({ team_id: team_id }, 1, 1)).data[0];
-  if (!team) throw new Error('Team not found');
+  if (!team) throw new NotFoundError('Team');
   // User is not a member of the team
   const members = await teamRepository.selectMembers(team_id);
-  if (members.data.find(m => m.user_id === user_id)) throw new Error('User is already in the team');
+  if (members.data.find(m => m.user_id === user_id)) throw new ConflictError('User is already in the team');
   const invite: Invite = {
     team_members_id: ulid(),
     team_id,
@@ -88,16 +89,19 @@ export async function addUserToTeam(
     joined_at: new Date().toISOString(),
   };
   const member = await teamRepository.insertTeamMember(invite);
-  if (!member) throw new Error('Error adding user to team');
+  if (!member) throw new InternalServerError('Failed to add user to team');
   return member;
 }
 
 // Delete user from team
 // todo: validate permission to delete user from a team
-export async function deleteTeamMember(team_id: string, user_id: string): Promise<boolean> {
+export async function deleteTeamMember(team_id: string, user_id: string): Promise<void> {
   const team = (await teamRepository.selectTeams({ team_id: team_id }, 1, 1)).data[0];
-  if (!team) throw new Error('Team not found');
-  return await teamRepository.deleteTeamMember(user_id, team_id);
+  if (!team) throw new NotFoundError('Team');
+  const deleted = await teamRepository.deleteTeamMember(user_id, team_id);
+  if (!deleted) {
+    throw new NotFoundError('Member not found in team');
+  }
 }
 
 // Lists users from team
@@ -112,8 +116,8 @@ export async function listTeamMembers(
 
 // Delete team
 // todo: validate permission to delete a team
-export async function deleteTeam(team_id: string): Promise<boolean> {
+export async function deleteTeam(team_id: string): Promise<void> {
   const team = (await teamRepository.selectTeams({ team_id: team_id }, 1, 1)).data[0];
-  if (!team) throw new Error('Team not found');
-  return await teamRepository.deleteTeam(team_id);
+  if (!team) throw new NotFoundError('Team');
+  await teamRepository.deleteTeam(team_id);
 }

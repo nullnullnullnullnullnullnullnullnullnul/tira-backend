@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { TaskFilter, TaskStatus, TaskPriority } from '../models/task';
 import * as taskService from '../services/tasks.service';
 import { Task } from '../models/task';
@@ -14,7 +14,8 @@ import {
 // GET /tasks?task_id=&team_id=&assigned_to=&created_by=&title=&status=&priority=&date_start=&date_end=&page=&pageSize=
 export async function listTasks(
   req: Request<{}, {}, {}, ListTasksQuery, {}>,
-  res: Response<PaginatedResult<Task> | { error: string }>
+  res: Response<PaginatedResult<Task>>,
+  next: NextFunction
 ) {
   try {
     const {
@@ -46,29 +47,31 @@ export async function listTasks(
       pageSize
     );
     res.json(tasks);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 }
 
 // GET /tasks/:task_id
 export async function getTask(
   req: Request<TaskParams, {}, {}, {}, {}>,
-  res: Response<Task | { error: string }>
+  res: Response<Task>,
+  next: NextFunction
 ) {
   try {
     const { task_id } = req.params;
     const task: Task = await taskService.getTaskById(task_id);
     res.json(task);
-  } catch (err: any) {
-    res.status(404).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 }
 
 // POST /tasks
 export async function createTask(
   req: Request<{}, {}, CreateTaskBody, {}, {}>,
-  res: Response<Task | { error: string }>
+  res: Response<Task>,
+  next: NextFunction
 ) {
   try {
     const {
@@ -93,36 +96,37 @@ export async function createTask(
       content: content ?? null,
     });
     res.status(201).json(newTask);
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 }
 
 // PATCH /tasks/:task_id
 export async function updateTask(
   req: Request<TaskParams, {}, UpdateTaskBody, {}, {}>,
-  res: Response<Task | { error: string }>
+  res: Response<Task>,
+  next: NextFunction
 ) {
   try {
     const { task_id } = req.params;
     const updatedTask: Task = await taskService.updateTask(task_id, req.body);
     res.json(updatedTask);
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 }
 
 // DELETE /tasks/:task_id
 export async function deleteTask(
   req: Request<TaskParams, {}, {}, {}, {}>,
-  res: Response<{} | { error: string }>
+  res: Response,
+  next: NextFunction
 ) {
   try {
     const { task_id } = req.params;
-    const deleted: boolean = await taskService.deleteTask(task_id);
-    if (!deleted) return res.status(404).json({ error: 'Task not found' });
+    await taskService.deleteTask(task_id);
     res.status(204).send();
-  } catch (err: any) {
-    res.status(404).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 }

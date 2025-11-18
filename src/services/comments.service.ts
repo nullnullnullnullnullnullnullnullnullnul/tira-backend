@@ -4,6 +4,8 @@ import * as taskRepository from '../repositories/task.repository';
 import * as userRepository from '../repositories/user.repository';
 import { Comment, CommentFilter } from '../models/comment';
 import { PaginatedResult } from '../models/pagination';
+import { InternalServerError, NotFoundError, ValidationError } from '../utils/AppError';
+import { notFoundHandler } from '../middleware/NotFound';
 
 // Comment content validation:
 // - Between 1 and 300 (inclusive) characters long
@@ -19,14 +21,14 @@ export async function createComment(
   content: string
 ): Promise<Comment> {
   if (!content || !isValidCommentContent(content)) {
-    throw new Error('Comment content must be between 1 and 300 characters');
-  }  
+    throw new ValidationError('Comment content must be between 1 and 300 characters');
+  }
   // Check if task exists
   const task = (await taskRepository.selectTask({ task_id }, 1, 1)).data[0];
-  if (!task) throw new Error('Task not found');
+  if (!task) throw new NotFoundError('Task');
   // Check if author exists
   const author = (await userRepository.selectUsers({ user_id: author_id }, 1, 1)).data[0];
-  if (!author) throw new Error('User not found');
+  if (!author) throw new NotFoundError('User');
   const comment: Comment = {
     comment_id: ulid(),
     task_id,
@@ -35,7 +37,7 @@ export async function createComment(
     created_at: new Date().toISOString(),
   };
   const newComment = await commentRepository.insertComment(comment);
-  if (!newComment) throw new Error('Error creating comment');
+  if (!newComment) throw new InternalServerError('Failed to create comment');
   return newComment;
 }
 
@@ -47,15 +49,15 @@ export async function getComments(
 ): Promise<PaginatedResult<Comment>> {
   if (filter.task_id) {
     const task = (await taskRepository.selectTask({ task_id: filter.task_id }, 1, 1)).data[0];
-    if (!task) throw new Error('Task not found');
+    if (!task) throw new NotFoundError('Task');
   }
   if (filter.author_id) {
     const author = (await userRepository.selectUsers({ user_id: filter.author_id }, 1, 1)).data[0];
-    if (!author) throw new Error('User not found');
+    if (!author) throw new NotFoundError('User');
   }
   const result = await commentRepository.selectComments(filter, page, pageSize);
   if (filter.comment_id && result.data.length === 0) {
-    throw new Error('Comment not found');
+    throw new NotFoundError('Comment');
   }
   return result;
 }
@@ -66,18 +68,17 @@ export async function updateComment(
   content: string
 ): Promise<Comment> {
   if (!content || !isValidCommentContent(content)) {
-    throw new Error('Comment content must be between 1 and 300 characters');
-  }  
+    throw new ValidationError('Comment content must be between 1 and 300 characters');
+  }
   // Check if comment exists
   await getComments({ comment_id }, 0, 1);
   const updated = await commentRepository.updateComment(comment_id, content);
-  if (!updated) throw new Error('Error updating comment');
+  if (!updated) throw new NotFoundError('Comment');
   return updated;
 }
 
 // Delete comment
-export async function deleteComment(comment_id: string): Promise<boolean> {
-  // Check if comment exists
+export async function deleteComment(comment_id: string): Promise<void> {
   await getComments({ comment_id }, 0, 1);
-  return await commentRepository.deleteComment(comment_id);
+  await commentRepository.deleteComment(comment_id);
 }

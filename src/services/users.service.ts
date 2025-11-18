@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import * as userRepository from '../repositories/user.repository';
 import { User, UserRole, validRoles, UserFilter } from '../models/user';
 import { PaginatedResult } from '../models/pagination';
+import { NotFoundError, ValidationError, InternalServerError } from '../utils/AppError';
 
 const SALT: number = 10;
 export type UserSafe = Omit<User, 'pwd_hash'>;
@@ -67,10 +68,10 @@ export async function insertUser(
       password: string
     }
 ): Promise<UserSafe> {
-  if (!isValidRole(fields.role)) throw new Error('Invalid role');
-  if (!isValidUsername(fields.username)) throw new Error('Invalid username');
-  if (!isValidEmail(fields.email)) throw new Error('Invalid email address');
-  if (!isValidPassword(fields.password)) throw new Error('Invalid password');
+  if (!isValidRole(fields.role)) throw new ValidationError('Invalid role');
+  if (!isValidUsername(fields.username)) throw new ValidationError('Invalid username');
+  if (!isValidEmail(fields.email)) throw new ValidationError('Invalid email address');
+  if (!isValidPassword(fields.password)) throw new ValidationError('Invalid password');
   const pwd_hash: string = await bcrypt.hash(fields.password, SALT);
   const newUser: User = {
     user_id: ulid(),
@@ -82,7 +83,7 @@ export async function insertUser(
     pwd_hash: pwd_hash
   }
   const inserted: User = await userRepository.insertUser(newUser);
-  if (!inserted) throw new Error('Failed to create user');
+  if (!inserted) throw new InternalServerError('Failed to create user');
   const { pwd_hash: _, ...safe } = inserted;
   return safe;
 }
@@ -91,9 +92,9 @@ export async function insertUser(
 // todo: validate permission to delete user's data
 export async function deleteUser(user_id: string): Promise<boolean> {
   const result = await listUsers({ user_id: user_id }, 1, 1);
-  if (result.data.length === 0) throw new Error('User not found');
+  if (result.data.length === 0) throw new NotFoundError('User');
   const deleted: boolean = await userRepository.deleteUser(user_id);
-  if (!deleted) throw new Error('Failed to delete user');
+  if (!deleted) throw new InternalServerError('Failed to delete user');
   return deleted;
 }
 
@@ -109,19 +110,19 @@ export async function updateUser(
   if (!user) throw new Error('User not found');
   const updates: Partial<User> = {};
   if (fields.username) {
-    if (!isValidUsername(fields.username)) throw new Error('Invalid username format');
+    if (!isValidUsername(fields.username)) throw new ValidationError('Invalid username format');
     updates.username = fields.username;
   }
   if (fields.email) {
-    if (!isValidEmail(fields.email)) throw new Error('Invalid email format');
+    if (!isValidEmail(fields.email)) throw new ValidationError('Invalid email format');
     updates.email = fields.email;
   }
   if (fields.password) {
-    if (!isValidPassword(fields.password)) throw new Error('Invalid password');
+    if (!isValidPassword(fields.password)) throw new ValidationError('Invalid password');
     updates.pwd_hash = await bcrypt.hash(fields.password, SALT);
   }
   const updatedUser: User | null = await userRepository.updateUser(user_id, updates);
-  if (!updatedUser) throw new Error('Failed to update user data');
+  if (!updatedUser) throw new NotFoundError('User');
   const { pwd_hash: _, ...safe } = updatedUser;
   return safe;
 }
