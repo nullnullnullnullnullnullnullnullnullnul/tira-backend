@@ -1,46 +1,15 @@
+import { PathParams } from "./base.dto";
 import { PaginationQuery } from "./pagination.dto";
 
-// Request Params interfaces
-export interface CreateTagParams extends Record<string, string> {
-  team_id: string;
-}
-
-export interface GetTagsByTeamParams extends Record<string, string> {
-  team_id: string;
-}
-
-export interface GetTagByIdParams extends Record<string, string> {
-  tag_id: string;
-  team_id: string;
-}
-
-export interface UpdateTagParams extends Record<string, string> {
-  tag_id: string;
-  team_id: string;
-}
-
-export interface DeleteTagParams extends Record<string, string> {
-  tag_id: string;
-  team_id: string;
-}
-
-export interface AddTagToTaskParams extends Record<string, string> {
-  task_id: string;
-}
-
-export interface RemoveTagFromTaskParams extends Record<string, string> {
-  task_id: string;
-  tag_id: string;
-}
-
-export interface GetTagsByTaskParams extends Record<string, string> {
-  task_id: string;
-}
-
-export interface GetTasksByTagParams extends Record<string, string> {
-  tag_id: string;
-  team_id: string;
-}
+export type CreateTagParams = PathParams<"team_id">;
+export type GetTagsByTeamParams = PathParams<"team_id">;
+export type GetTagByIdParams = PathParams<"tag_id" | "team_id">;
+export type UpdateTagParams = PathParams<"tag_id" | "team_id">;
+export type DeleteTagParams = PathParams<"tag_id" | "team_id">;
+export type AddTagToTaskParams = PathParams<"task_id">;
+export type RemoveTagFromTaskParams = PathParams<"task_id" | "tag_id">;
+export type GetTagsByTaskParams = PathParams<"task_id">;
+export type GetTasksByTagParams = PathParams<"tag_id" | "team_id">;
 
 // Request Body interfaces
 export interface CreateTagBody {
@@ -55,5 +24,5 @@ export interface AddTagToTaskBody {
   tag_id: string;
 }
 
-export interface GetTagsByTeamQuery extends PaginationQuery {}
-export interface GetTasksByTagQuery extends PaginationQuery {}
+export type GetTagsByTeamQuery = PaginationQuery;
+export type GetTasksByTagQuery = PaginationQuery;

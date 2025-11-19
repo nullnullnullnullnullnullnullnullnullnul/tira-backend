@@ -1,42 +1,22 @@
+import { PathParams } from "./base.dto";
 import { PaginationQuery } from "./pagination.dto";
 
-export interface GetUserTeamsParams extends Record<string, string> {
-  user_id: string;
-}
-
-export interface UpdateTeamParams extends Record<string, string> {
-  team_id: string;
-}
-
-export interface AddUserToTeamParams extends Record<string, string> {
-  team_id: string;
-}
-
-export interface RemoveUserFromTeamParams extends Record<string, string> {
-  team_id: string;
-  user_id: string;
-}
-
-export interface ListTeamMembersParams extends Record<string, string> {
-  team_id: string;
-}
-
-export interface DeleteTeamParams extends Record<string, string> {
-  team_id: string;
-}
-
-export interface UpdateTeamBody {
-  name: string
-}
+export type GetUserTeamsParams = PathParams<"user_id">;
+export type UpdateTeamParams = PathParams<"team_id">;
+export type AddUserToTeamParams = PathParams<"team_id">;
+export type RemoveUserFromTeamParams = PathParams<"team_id" | "user_id">;
+export type ListTeamMembersParams = PathParams<"team_id">;
+export type DeleteTeamParams = PathParams<"team_id">;
+export type UpdateTeamBody = Pick<CreateTeamBody, "name">;
 
 export interface AddUserToTeamBody {
   user_id: string
 }
 
-export interface CreateTeamBody {
+export type CreateTeamBody = {
   owner_id: string;
   name: string;
 }
 
-export interface GetUserTeamsQuery extends PaginationQuery{}
-export interface ListTeamMembersQuery extends PaginationQuery{}
+export type GetUserTeamsQuery = PaginationQuery;
+export type ListTeamMembersQuery = PaginationQuery;

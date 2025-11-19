@@ -1,12 +1,12 @@
 import { UserRole } from '../models/user';
-import { PaginationQuery } from './pagination.dto';
+import { PaginatedQuery, PathParams } from './base.dto';
 
-export interface ListUsersQuery extends PaginationQuery {
+export type ListUsersQuery = PaginatedQuery<{
   username?: string;
   email?: string;
   role?: UserRole;
   user_id?: string;
-}
+}>;
 
 export interface CreateUserBody {
   username: string;
@@ -15,16 +15,6 @@ export interface CreateUserBody {
   password: string;
 }
 
-export interface UpdateUserBody {
-  username?: string;
-  email?: string;
-  password?: string;
-}
-
-export interface DeleteUserParams extends Record<string, string> {
-  user_id: string;
-}
-
-export interface UpdateUserParams extends Record<string, string> {
-  user_id: string;
-}
+export type UpdateUserBody = Partial<Pick<CreateUserBody, 'username' | 'email' | 'password'>>;
+export type DeleteUserParams = PathParams<'user_id'>;
+export type UpdateUserParams = PathParams<'user_id'>;

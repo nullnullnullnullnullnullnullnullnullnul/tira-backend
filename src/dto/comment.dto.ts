@@ -1,32 +1,19 @@
-import { PaginationQuery } from "./pagination.dto";
+import { PaginatedQuery, PathParams } from "./base.dto";
 
-export interface CreateCommentParams extends Record<string, string> {
-  task_id: string;
-}
-
-export interface GetCommentByIdParams extends Record<string, string> {
-  comment_id: string;
-}
-
-export interface UpdateCommentParams extends Record<string, string> {
-  comment_id: string;
-}
-
-export interface DeleteCommentParams extends Record<string, string> {
-  comment_id: string;
-}
+export type CreateCommentParams = PathParams<"task_id">;
+export type GetCommentByIdParams = PathParams<"comment_id">;
+export type UpdateCommentParams = PathParams<"comment_id">;
+export type DeleteCommentParams = PathParams<"comment_id">;
 
 export interface CreateCommentBody {
   author_id: string;
   content: string;
 }
 
-export interface UpdateCommentBody {
-  content: string;
-}
+export type UpdateCommentBody = Pick<CreateCommentBody, "content">;
 
-export interface GetCommentsQuery extends PaginationQuery {
+export type GetCommentsQuery = PaginatedQuery<{
   comment_id?: string;
   task_id?: string;
   author_id?: string;
-}
+}>;

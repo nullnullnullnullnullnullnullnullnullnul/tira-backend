@@ -1,7 +1,7 @@
 import { TaskStatus, TaskPriority } from '../models/task';
-import { PaginationQuery } from './pagination.dto';
+import { PaginatedQuery, PathParams } from './base.dto';
 
-export interface ListTasksQuery extends PaginationQuery {
+export type ListTasksQuery = PaginatedQuery<{
   task_id?: string;
   team_id?: string;
   assigned_to?: string;
@@ -11,7 +11,7 @@ export interface ListTasksQuery extends PaginationQuery {
   priority?: TaskPriority;
   date_start?: string;
   date_end?: string;
-}
+}>;
 
 export interface CreateTaskBody {
   created_by: string;
@@ -25,16 +25,8 @@ export interface CreateTaskBody {
   content?: string | null;
 }
 
-export interface UpdateTaskBody {
-  assigned_to?: string;
-  title?: string;
-  description?: string | null;
-  status?: TaskStatus;
-  priority?: TaskPriority;
-  deadline?: string;
-  content?: string | null;
-}
+type EditableTaskFields = Omit<CreateTaskBody, 'created_by' | 'team_id'>;
 
-export interface TaskParams extends Record<string, string> {
-  task_id: string;
-}
+export type UpdateTaskBody = Partial<EditableTaskFields>;
+
+export type TaskParams = PathParams<'task_id'>;

@@ -10,7 +10,7 @@ export async function insertTag(tag: Tag): Promise<Tag | null> {
     VALUES ($1, $2, $3)
     RETURNING *
   `,
-  [tag.tag_id, tag.team_id, tag.name]);
+    [tag.tag_id, tag.team_id, tag.name]);
   return result.rows[0] ?? null;
 }
 
@@ -21,7 +21,7 @@ export async function deleteTag(tag_id: string, team_id: string): Promise<boolea
     WHERE tag_id = $1
       AND team_id = $2
   `,
-  [tag_id, team_id]);
+    [tag_id, team_id]);
   return (result.rowCount ?? 0) > 0;
 }
 
@@ -35,7 +35,7 @@ export async function selectTags(
   pageSize: number = 100
 ): Promise<PaginatedResult<Tag>> {
   const conditions: string[] = [];
-  const values: any[] = [];  
+  const values: any[] = [];
   Object.entries(filter).forEach(([key, value]) => {
     if (value === undefined || value === null) return;
     values.push(value);
@@ -43,15 +43,16 @@ export async function selectTags(
   });
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   const offset = (page - 1) * pageSize;
+  values.push(pageSize);
+  values.push(offset);
   const result = await pool.query(`
     SELECT *,
       COUNT(*) OVER() as total_count
     FROM tags
     ${where}
     ORDER BY name ASC
-    LIMIT $${values.length - 1} OFFSET $${values.length} 
-  `,
-  values);
+    LIMIT $${values.length - 1} OFFSET $${values.length}
+  `, values);
   return createPaginatedResult(result.rows, page, pageSize);
 }
 
@@ -69,7 +70,7 @@ export async function updateTag(
       AND team_id = $3
     RETURNING *
   `,
-  [fields.name, tag_id, team_id]);
+    [fields.name, tag_id, team_id]);
   return result.rows[0] ?? null;
 }
 
@@ -81,7 +82,7 @@ export async function insertTaskTag(taskTag: TaskTag): Promise<TaskTag | null> {
     ON CONFLICT (task_id, tag_id) DO NOTHING
     RETURNING *
   `,
-  [taskTag.task_tags_id, taskTag.task_id, taskTag.tag_id]);
+    [taskTag.task_tags_id, taskTag.task_id, taskTag.tag_id]);
   return result.rows[0] ?? null;
 }
 
@@ -92,7 +93,7 @@ export async function deleteTaskTag(task_id: string, tag_id: string): Promise<bo
     WHERE task_id = $1 
       AND tag_id = $2
   `,
-  [task_id, tag_id]);
+    [task_id, tag_id]);
   return (result.rowCount ?? 0) > 0;
 }
 
@@ -105,7 +106,7 @@ export async function selectTagsByTask(task_id: string): Promise<Tag[]> {
     WHERE tt.task_id = $1
     ORDER BY t.name ASC
   `,
-  [task_id]);
+    [task_id]);
   return result.rows;
 }
 
@@ -125,6 +126,6 @@ export async function selectTasksByTag(
     ORDER BY t.deadline DESC
     LIMIT $2 OFFSET $3
   `,
-  [tag_id, pageSize, offset]);
+    [tag_id, pageSize, offset]);
   return createPaginatedResult<Task>(result.rows, page, pageSize);
 }

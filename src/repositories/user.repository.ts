@@ -17,7 +17,7 @@ export async function selectUsers(
   const conditions: string[] = [];
   const values: any[] = [];
   Object.entries(filter).forEach(([key, value]) => {
-    if (value == undefined || value == null) return;
+    if (value === undefined || value === null) return;
     if (key === 'username') {
       values.push(`%${String(value).toLowerCase()}%`);
       conditions.push(`LOWER(username) LIKE $${values.length}`);

@@ -1,17 +1,9 @@
-/**
- * Base interface that all model entities should extend
- * Ensures only proper model types can be paginated
- */
-export interface BaseModel {
-  // Only key, value pairs are valid
-  // Key must be a string while values can be any
-  [key: string]: any;
-}
+import { BaseModel } from './base';
 
 /**
  * Generic pagination result wrapper
  * Used by all repository functions that return paginated data
- * @template T - Must be an object type
+ * @template T - Must extend BaseModel for type safety
  */
 export interface PaginatedResult<T extends BaseModel> {
   data: T[];
@@ -26,16 +18,18 @@ export interface PaginatedResult<T extends BaseModel> {
 /**
  * Helper function to create a paginated result
  * Extracts total_count from query results and formats the response
+ * @template T - The model type being paginated
  */
 export function createPaginatedResult<T extends BaseModel>(
-  // rows: Array conbines model T and optionally total_count
-  // total_count? -> if the query returns no rows theres no total_count
-  rows: (T & { total_count?: string })[],
+  rows: (T & { total_count?: string | number })[],
   page: number,
   pageSize: number
 ): PaginatedResult<T> {
-  const total = rows.length > 0 ? parseInt(rows[0]?.total_count || '0') : 0;
-  const totalPages = Math.ceil(total / pageSize);
+  const total = rows.length > 0
+    ? (typeof rows[0]?.total_count === 'string'
+      ? parseInt(rows[0].total_count, 10)
+      : rows[0]?.total_count ?? 0)
+    : 0;
   const data = rows.map(({ total_count, ...item }) => item as T);
   return {
     data,
@@ -43,7 +37,7 @@ export function createPaginatedResult<T extends BaseModel>(
       total,
       page,
       pageSize,
-      totalPages
+      totalPages: Math.ceil(total / pageSize)
     }
   };
 }

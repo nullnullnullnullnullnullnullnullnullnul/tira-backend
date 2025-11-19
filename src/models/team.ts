@@ -1,32 +1,24 @@
+import { BaseModel } from './base';
 import { UserRole } from '../models/user';
 
-export type Team = {
+export interface Team extends BaseModel {
   team_id: string;
   owner_id: string;
   name: string;
   created_at: string;
 }
 
-export type Invite = {
+interface TeamMembershipBase<TTimestamp> extends BaseModel {
   team_members_id: string;
   team_id: string;
   user_id: string;
   role: UserRole;
-  invited_at: string;
-  joined_at: string;
+  invited_at: TTimestamp;
+  joined_at: TTimestamp;
 }
 
-export interface TeamMember {
-  team_members_id: string;
-  team_id: string;
-  user_id: string;
-  role: UserRole;
-  invited_at: Date | null;
-  joined_at: Date | null;
-}
+export type Invite = TeamMembershipBase<string>;
 
-export type TeamFilter = {
-  team_id?: string;
-  owner_id?: string;
-  name?: string;
-}
+export type TeamMember = TeamMembershipBase<Date | null>;
+
+export type TeamFilter = Partial<Pick<Team, 'team_id' | 'owner_id' | 'name'>>;
