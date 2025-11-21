@@ -120,19 +120,19 @@ CREATE TABLE task_tags(
   CONSTRAINT task_tags_uq UNIQUE (task_id, tag_id)
 );
 
--- task status history
-CREATE TABLE task_status_history(
-  history_id    CHAR(26) PRIMARY KEY,
-  task_id       CHAR(26),
-  changed_by    CHAR(26),
-  status        task_status_enum,
+-- task history
+CREATE TABLE task_history(
+  history_id    UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  task_id       CHAR(26) NOT NULL,
+  change_type   VARCHAR(10) NOT NULL, -- UPDATE, CREATE, DELETE
+  entity        VARCHAR(10) NOT NULL, -- TASK, COMMENT, TAG
+  field         VARCHAR(50),
+  old_value     TEXT,
+  new_value     TEXT,
   changed_at    TIMESTAMP DEFAULT NOW(),
-  CONSTRAINT task_status_history_task_id_fk FOREIGN KEY (task_id)
+  CONSTRAINT task_history_task_id_fk FOREIGN KEY (task_id)
     REFERENCES tasks(task_id)
-    ON DELETE SET NULL,
-  CONSTRAINT task_status_history_changed_by_fk FOREIGN KEY (changed_by)
-    REFERENCES users(user_id)
-    ON DELETE SET NULL
+    ON DELETE CASCADE
 );
 
 -- comments
@@ -174,6 +174,73 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION log_task_changes_fn()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Status change
+  IF OLD.status IS DISTINCT FROM NEW.status THEN
+    INSERT INTO task_history (task_id, change_type, entity, field, old_value, new_value)
+    VALUES (NEW.task_id, 'UPDATE', 'TASK', 'status', OLD.status::text, NEW.status::text);
+  END IF;
+
+  -- Priority change
+  IF OLD.priority IS DISTINCT FROM NEW.priority THEN
+    INSERT INTO task_history (task_id, change_type, entity, field, old_value, new_value)
+    VALUES (NEW.task_id, 'UPDATE', 'TASK', 'priority', OLD.priority::text, NEW.priority::text);
+  END IF;
+
+  -- Assigned To change
+  IF OLD.assigned_to IS DISTINCT FROM NEW.assigned_to THEN
+    INSERT INTO task_history (task_id, change_type, entity, field, old_value, new_value)
+    VALUES (NEW.task_id, 'UPDATE', 'TASK', 'assigned_to', OLD.assigned_to, NEW.assigned_to);
+  END IF;
+
+  -- Title change
+  IF OLD.title IS DISTINCT FROM NEW.title THEN
+    INSERT INTO task_history (task_id, change_type, entity, field, old_value, new_value)
+    VALUES (NEW.task_id, 'UPDATE', 'TASK', 'title', OLD.title, NEW.title);
+  END IF;
+
+  -- Description change
+  IF OLD.description IS DISTINCT FROM NEW.description THEN
+    INSERT INTO task_history (task_id, change_type, entity, field, old_value, new_value)
+    VALUES (NEW.task_id, 'UPDATE', 'TASK', 'description', OLD.description, NEW.description);
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION log_comment_activity_fn()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO task_history (task_id, change_type, entity, field, new_value)
+  VALUES (NEW.task_id, 'CREATE', 'COMMENT', 'content', NEW.content);
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION log_tag_activity_fn()
+RETURNS TRIGGER AS $$
+DECLARE
+  tag_name VARCHAR(20);
+BEGIN
+  IF (TG_OP = 'INSERT') THEN
+    SELECT name INTO tag_name FROM tags WHERE tag_id = NEW.tag_id;
+    INSERT INTO task_history (task_id, change_type, entity, field, new_value)
+    VALUES (NEW.task_id, 'CREATE', 'TAG', 'tag', tag_name);
+    RETURN NEW;
+  ELSIF (TG_OP = 'DELETE') THEN
+    SELECT name INTO tag_name FROM tags WHERE tag_id = OLD.tag_id;
+    INSERT INTO task_history (task_id, change_type, entity, field, old_value)
+    VALUES (OLD.task_id, 'DELETE', 'TAG', 'tag', tag_name);
+    RETURN OLD;
+  END IF;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
 
 -- ====================================
 -- ============ TRIGGERS ==============
@@ -183,6 +250,21 @@ CREATE TRIGGER update_last_modified_at_tr
 BEFORE UPDATE ON tasks
 FOR EACH ROW
 EXECUTE FUNCTION set_last_modified_at_fn();
+
+CREATE TRIGGER log_task_changes_tr
+AFTER UPDATE ON tasks
+FOR EACH ROW
+EXECUTE FUNCTION log_task_changes_fn();
+
+CREATE TRIGGER log_comment_activity_tr
+AFTER INSERT ON comments
+FOR EACH ROW
+EXECUTE FUNCTION log_comment_activity_fn();
+
+CREATE TRIGGER log_tag_activity_tr
+AFTER INSERT OR DELETE ON task_tags
+FOR EACH ROW
+EXECUTE FUNCTION log_tag_activity_fn();
 
 GRANT CONNECT ON DATABASE tira_db TO tira;
 GRANT USAGE ON SCHEMA public TO tira;

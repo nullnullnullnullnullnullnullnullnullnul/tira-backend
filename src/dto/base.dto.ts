@@ -5,4 +5,3 @@ export type PathParams<K extends string> = {
 };
 
 export type PaginatedQuery<Filters extends object = Record<never, never>> = PaginationQuery & Filters;
-

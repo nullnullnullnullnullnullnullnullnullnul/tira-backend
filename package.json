@@ -4,9 +4,12 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "ts-node-dev src/scripts/init.ts && ts-node-dev --respawn --transpile-only src/index.ts",
+    "dev": "cross-env DB_PORT=5432 bash scripts/setup_db.sh && ts-node-dev src/scripts/init.ts && cross-env DB_PORT=5432 ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc -p .",
-    "start": "ts-node src/index.ts"
+    "start": "cross-env DB_PORT=5432 ts-node src/index.ts",
+    "db:init": "cross-env DB_PORT=5432 bash scripts/setup_db.sh",
+    "db:start": "pg_ctl -D .postgres_data -l postgres.log -o \"-p 5432 -k /tmp\" start",
+    "db:stop": "pg_ctl -D .postgres_data stop"
   },
   "keywords": [],
   "author": "",

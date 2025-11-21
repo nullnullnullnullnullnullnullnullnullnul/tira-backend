@@ -172,6 +172,50 @@ paths:
                     type: string
                     example: "No fields provided to update"
 
+  /users/{user_id}/activity:
+    get:
+      summary: Get user activity history
+      description: Retrieves activity history for all tasks in teams the user belongs to, with pagination.
+      tags:
+        - Users
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+          description: ID of the user
+          example: "01JXXXXXXXXXXXXXXXXXX"
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number (1-indexed)
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            default: 20
+          description: Number of items per page
+      responses:
+        '200':
+          description: Paginated activity history response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTaskHistory'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "User not found"
+
 
 # =============
 # === TEAMS ===
@@ -1424,6 +1468,19 @@ components:
         pagination:
           $ref: '#/components/schemas/Pagination'
 
+    PaginatedTaskHistory:
+      type: object
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskHistory'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
     User:
       type: object
       required:
@@ -1729,3 +1786,51 @@ components:
         author_id:
           type: string
           example: "01JZZZZZZZZZZZZZZZZZZ"
+
+    TaskHistory:
+      type: object
+      required:
+        - history_id
+        - task_id
+        - change_type
+        - entity
+        - changed_at
+      properties:
+        history_id:
+          type: string
+          example: "01JXXXXXXXXXXXXXXXXXX"
+          description: "Unique identifier for the history record"
+        task_id:
+          type: string
+          example: "01JYYYYYYYYYYYYYYYYYY"
+          description: "ID of the task this history belongs to"
+        change_type:
+          type: string
+          enum: [UPDATE, CREATE, DELETE]
+          example: "UPDATE"
+          description: "Type of change that occurred"
+        entity:
+          type: string
+          enum: [TASK, COMMENT, TAG]
+          example: "TASK"
+          description: "Entity type that was changed"
+        field:
+          type: string
+          nullable: true
+          example: "status"
+          description: "Field that was changed (null for CREATE/DELETE)"
+        old_value:
+          type: string
+          nullable: true
+          example: "pending"
+          description: "Previous value of the field"
+        new_value:
+          type: string
+          nullable: true
+          example: "ongoing"
+          description: "New value of the field"
+        changed_at:
+          type: string
+          format: date-time
+          example: "2025-11-21T03:30:00Z"
+          description: "Timestamp when the change occurred"
