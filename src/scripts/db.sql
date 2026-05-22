@@ -33,8 +33,8 @@ CREATE TABLE users(
   email         VARCHAR(254),
   pwd_hash      TEXT NOT NULL,
   role          user_role_enum NOT NULL,
-  created_at    TIMESTAMP DEFAULT NOW(),
-  last_login    TIMESTAMP DEFAULT NULL,
+  created_at    TIMESTAMPTZ DEFAULT NOW(),
+  last_login    TIMESTAMPTZ DEFAULT NULL,
   CONSTRAINT users_username_uq UNIQUE(username), 
   CONSTRAINT users_email_uq UNIQUE(email)
 );
@@ -44,7 +44,7 @@ CREATE TABLE teams(
   team_id       CHAR(26) PRIMARY KEY,
   owner_id      CHAR(26) NOT NULL,
   name          VARCHAR(50) NOT NULL,
-  created_at    TIMESTAMP DEFAULT NOW(),
+  created_at    TIMESTAMPTZ DEFAULT NOW(),
   CONSTRAINT teams_owner_id_fk FOREIGN KEY (owner_id)
     REFERENCES users(user_id)
     ON DELETE CASCADE
@@ -70,8 +70,8 @@ CREATE TABLE team_members(
   team_id           CHAR(26) NOT NULL,
   user_id           CHAR(26) NOT NULL,
   role              user_role_enum,
-  invited_at        TIMESTAMP,
-  joined_at         TIMESTAMP,
+  invited_at        TIMESTAMPTZ,
+  joined_at         TIMESTAMPTZ,
   CONSTRAINT team_members_team_id_fk FOREIGN KEY (team_id)
     REFERENCES teams(team_id)
     ON DELETE CASCADE,
@@ -91,9 +91,9 @@ CREATE TABLE tasks(
   description       VARCHAR(300),
   status            task_status_enum NOT NULL DEFAULT 'pending',
   priority          task_priority_enum NOT NULL DEFAULT 'medium',
-  deadline          TIMESTAMP NOT NULL,
+  deadline          TIMESTAMPTZ NOT NULL,
   content           TEXT,
-  last_modified_at  TIMESTAMP NOT NULL DEFAULT NOW(),
+  last_modified_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT tasks_team_id_fk FOREIGN KEY (team_id)
     REFERENCES teams(team_id)
     ON DELETE CASCADE,
@@ -129,7 +129,7 @@ CREATE TABLE task_history(
   field         VARCHAR(50),
   old_value     TEXT,
   new_value     TEXT,
-  changed_at    TIMESTAMP DEFAULT NOW(),
+  changed_at    TIMESTAMPTZ DEFAULT NOW(),
   CONSTRAINT task_history_task_id_fk FOREIGN KEY (task_id)
     REFERENCES tasks(task_id)
     ON DELETE CASCADE
@@ -141,7 +141,7 @@ CREATE TABLE comments(
   task_id       CHAR(26) NOT NULL,
   author_id     CHAR(26),
   content       VARCHAR(300),
-  created_at    TIMESTAMP DEFAULT NOW(),
+  created_at    TIMESTAMPTZ DEFAULT NOW(),
   CONSTRAINT comments_task_id_fk FOREIGN KEY (task_id)
     REFERENCES tasks(task_id)
     ON DELETE CASCADE,
