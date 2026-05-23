@@ -150,6 +150,24 @@ export async function deleteTeamMember(user_id: string, team_id: string, db: Exe
   return (result.rowCount ?? 0) > 0;
 }
 
+// Existence check for a single (team_id, user_id) membership row.
+// Backed by the UNIQUE (team_id, user_id) composite index on
+// team_members (migration 0005), so it is a single index probe.
+// Prefer this over selectMembers(...).find(...) anywhere only the
+// boolean answer is needed: selectMembers reads up to pageSize rows
+// across the wire and copies user columns we then discard.
+export async function isTeamMember(
+  team_id: string,
+  user_id: string,
+  db: Executor = pool,
+): Promise<boolean> {
+  const result = await db.query(
+    `SELECT 1 FROM team_members WHERE team_id = $1 AND user_id = $2 LIMIT 1`,
+    [team_id, user_id],
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
 // Select team members
 export async function selectMembers(
   team_id: string,
