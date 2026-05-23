@@ -179,8 +179,8 @@ and extended in
 |---|---|---|
 | `history_id` | `UUID` PK DEFAULT `gen_random_uuid()` | trigger-generated, not application-generated |
 | `task_id` | `TEXT` NOT NULL FK -> `tasks.task_id` | ON DELETE CASCADE |
-| `change_type` | `VARCHAR(10)` NOT NULL | one of `CREATE`, `UPDATE`, `DELETE` |
-| `entity` | `VARCHAR(10)` NOT NULL | one of `TASK`, `COMMENT`, `TAG` |
+| `change_type` | `task_history_change_type_enum` NOT NULL | one of `CREATE`, `UPDATE`, `DELETE` (migration 0018) |
+| `entity` | `task_history_entity_enum` NOT NULL | one of `TASK`, `COMMENT`, `TAG` (migration 0018) |
 | `field` | `VARCHAR(50)` | which column changed (e.g. `status`, `priority`) |
 | `old_value` | `TEXT` | NULL for `CREATE` rows |
 | `new_value` | `TEXT` | NULL for `DELETE` rows |
