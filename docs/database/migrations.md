@@ -1,5 +1,12 @@
 # Database migrations
 
+This document covers migration mechanics: the tool, the file layout,
+how to author one, and the audit-attribution contract. For a tour of
+the resulting schema see [`schema.md`](schema.md); for the
+representative SQL the application issues see [`queries.md`](queries.md);
+for the rationale behind ORM-less SQL, ULID PKs, and the audit
+session-variable approach see [`decisions.md`](decisions.md).
+
 ## Tool
 
 [`node-pg-migrate`](https://salsita.github.io/node-pg-migrate/) v8, in

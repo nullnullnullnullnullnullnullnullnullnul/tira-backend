@@ -101,9 +101,18 @@ DB_SUPERPASS=postgres
 | `npm run db:migrate:create` | Scaffold a new migration file |
 | `npm run db:seed` | Seed sample data |
 
-See [docs/database/migrations.md](docs/database/migrations.md) for the
-migration conventions (sequential `NNNN_*.sql` naming, why SQL-file mode,
-audit trigger contract).
+Database documentation lives under [docs/database/](docs/database/):
+
+- [`schema.md`](docs/database/schema.md) - table-by-table reference,
+  indexes, triggers, cascade map.
+- [`queries.md`](docs/database/queries.md) - the representative SQL
+  the application issues (pagination, dynamic filters, audited
+  writes).
+- [`migrations.md`](docs/database/migrations.md) - migration tool,
+  layout, conventions, and the audit-attribution contract.
+- [`decisions.md`](docs/database/decisions.md) - ADR-style notes on
+  ORM-less SQL, ULIDs, `TIMESTAMPTZ`, session-variable audit, and
+  the `X-User-Id` placeholder.
 
 ### Run
 
