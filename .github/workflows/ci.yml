@@ -1,0 +1,88 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: typecheck and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript build
+        run: npm run build
+
+  schema:
+    name: apply schema to postgres
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install psql client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends postgresql-client
+
+      - name: Create application role and database
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -c "CREATE USER tira WITH PASSWORD 'tira' SUPERUSER;"
+          psql -h localhost -U postgres -c "CREATE DATABASE tira_db OWNER tira;"
+
+      - name: Apply schema
+        env:
+          PGPASSWORD: tira
+        run: psql -h localhost -U tira -d tira_db -v ON_ERROR_STOP=1 -f src/scripts/db.sql
+
+      - name: Verify expected tables exist
+        env:
+          PGPASSWORD: tira
+        run: |
+          tables=$(psql -h localhost -U tira -d tira_db -t -A -c \
+            "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename")
+          expected="comments
+          tags
+          task_history
+          task_tags
+          tasks
+          team_members
+          teams
+          users"
+          # Strip leading whitespace from the heredoc
+          expected=$(echo "$expected" | sed 's/^[[:space:]]*//')
+          if [ "$tables" != "$expected" ]; then
+            echo "::error::Schema apply produced unexpected table set"
+            echo "Got:"
+            echo "$tables"
+            echo "Expected:"
+            echo "$expected"
+            exit 1
+          fi
+          echo "All 8 expected tables present."

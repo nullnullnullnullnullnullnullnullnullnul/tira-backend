@@ -1,4 +1,25 @@
-.env
+# Node / TypeScript
 node_modules/
 dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Local environment
+.env
+.env.local
+
+# Local Postgres dev cluster (created by scripts/setup_db.sh)
 .postgres_data/
+postgres.log
+
+# Editors / IDEs
+.vscode/
+.idea/
+.cache/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
