@@ -154,7 +154,7 @@ WHERE tm.user_id = $1
 `DISTINCT` because a user can belong to a team in only one row, but
 the explicit `DISTINCT` documents the contract ("we want a set of
 task ids") regardless. This array is then fed into the
-`task_history IN (...)` query immediately below.
+`task_history` query immediately below.
 
 ## "Audit feed for those tasks"
 
@@ -162,16 +162,18 @@ task ids") regardless. This array is then fed into the
 SELECT *,
        COUNT(*) OVER() AS total_count
 FROM task_history
-WHERE task_id IN ($1, $2, ..., $N)
+WHERE task_id = ANY($1::text[])
 ORDER BY changed_at DESC
-LIMIT $N+1 OFFSET $N+2
+LIMIT $2 OFFSET $3
 ```
 
 Backed by `task_history_changed_at_idx (changed_at DESC)` and
-`task_history_task_id_idx (task_id)`. The `IN` placeholders are
-built from the array of task ids returned by the previous query;
-each is a parameter binding (`$1, $2, ...`), never an interpolated
-literal.
+`task_history_task_id_idx (task_id)`. The task-id array is bound
+as a single `text[]` parameter and matched with `= ANY(...)`,
+which is the idiomatic Postgres shape for "match any of these
+values": one parameter instead of N placeholders built by string
+concatenation, no upper bound on array length tied to the wire
+protocol, and the same plan as `IN (...)` for an indexed column.
 
 `task_history` is append-only and only written by triggers; the
 application never issues `INSERT` against it directly.
