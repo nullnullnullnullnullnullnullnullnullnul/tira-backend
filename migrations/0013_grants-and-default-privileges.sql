@@ -1,0 +1,32 @@
+-- Up Migration
+-- Grants the application role (tira) the minimum CRUD permissions it
+-- needs on the application schema. Migrations run as the application
+-- role themselves (per .env.example DATABASE_URL), so future tables
+-- and sequences inherit these privileges via ALTER DEFAULT PRIVILEGES.
+
+GRANT CONNECT ON DATABASE tira_db TO tira;
+GRANT USAGE ON SCHEMA public TO tira;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO tira;
+GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO tira;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO tira;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO tira;
+
+
+-- Down Migration
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+REVOKE USAGE, SELECT, UPDATE ON SEQUENCES FROM tira;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+REVOKE SELECT, INSERT, UPDATE, DELETE ON TABLES FROM tira;
+
+REVOKE USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public FROM tira;
+REVOKE SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public FROM tira;
+
+REVOKE USAGE ON SCHEMA public FROM tira;
+REVOKE CONNECT ON DATABASE tira_db FROM tira;
