@@ -17,9 +17,9 @@
 -- ============== ENUMS ===============
 -- ====================================
 
-CREATE TYPE user_role_enum AS ENUM('leader', 'user');
-CREATE TYPE task_status_enum AS ENUM('pending', 'ongoing', 'done', 'canceled');
-CREATE TYPE task_priority_enum AS ENUM('high', 'medium', 'low');
+CREATE TYPE user_role_enum AS ENUM ('leader', 'user');
+CREATE TYPE task_status_enum AS ENUM ('pending', 'ongoing', 'done', 'canceled');
+CREATE TYPE task_priority_enum AS ENUM ('high', 'medium', 'low');
 
 
 -- ====================================
@@ -31,99 +31,99 @@ CREATE TYPE task_priority_enum AS ENUM('high', 'medium', 'low');
 -- a UNIQUE constraint treats every NULL as distinct, so multiple users
 -- can have a NULL email without violating users_email_uq. If the product
 -- ever requires email-on-signup, change `email` to `NOT NULL` here.
-CREATE TABLE users(
-  user_id       TEXT PRIMARY KEY,
-  username      VARCHAR(50) NOT NULL,
-  email         VARCHAR(254),
-  pwd_hash      TEXT NOT NULL,
-  role          user_role_enum NOT NULL,
-  created_at    TIMESTAMPTZ DEFAULT NOW(),
-  CONSTRAINT users_username_uq UNIQUE(username),
-  CONSTRAINT users_email_uq UNIQUE(email)
+CREATE TABLE users (
+  user_id TEXT PRIMARY KEY,
+  username VARCHAR(50) NOT NULL,
+  email VARCHAR(254),
+  pwd_hash TEXT NOT NULL,
+  role user_role_enum NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  CONSTRAINT users_username_uq UNIQUE (username),
+  CONSTRAINT users_email_uq UNIQUE (email)
 );
 
 -- teams
-CREATE TABLE teams(
-  team_id       TEXT PRIMARY KEY,
-  owner_id      TEXT NOT NULL,
-  name          VARCHAR(50) NOT NULL,
-  created_at    TIMESTAMPTZ DEFAULT NOW(),
+CREATE TABLE teams (
+  team_id TEXT PRIMARY KEY,
+  owner_id TEXT NOT NULL,
+  name VARCHAR(50) NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now(),
   CONSTRAINT teams_owner_id_fk FOREIGN KEY (owner_id)
-    REFERENCES users(user_id)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE,
-    -- removes/update on user_id update
-  CONSTRAINT name_uq UNIQUE(name, owner_id) -- name + owner_id 
+  REFERENCES users (user_id)
+  ON DELETE CASCADE
+  ON UPDATE CASCADE,
+  -- removes/update on user_id update
+  CONSTRAINT name_uq UNIQUE (name, owner_id) -- name + owner_id 
 );
 
 -- tags
-CREATE TABLE tags(
-  tag_id        TEXT PRIMARY KEY,
-  team_id       TEXT NOT NULL,
-  name          VARCHAR(20) NOT NULL,
+CREATE TABLE tags (
+  tag_id TEXT PRIMARY KEY,
+  team_id TEXT NOT NULL,
+  name VARCHAR(20) NOT NULL,
   CONSTRAINT tags_team_id_fk FOREIGN KEY (team_id)
-    REFERENCES teams(team_id)
-    ON DELETE CASCADE,
-  CONSTRAINT tags_team_name_uq UNIQUE(team_id, name)
+  REFERENCES teams (team_id)
+  ON DELETE CASCADE,
+  CONSTRAINT tags_team_name_uq UNIQUE (team_id, name)
 );
 
 -- team members
-CREATE TABLE team_members(
-  team_members_id   TEXT PRIMARY KEY,
-  team_id           TEXT NOT NULL,
-  user_id           TEXT NOT NULL,
-  role              user_role_enum,
-  invited_at        TIMESTAMPTZ,
-  joined_at         TIMESTAMPTZ,
+CREATE TABLE team_members (
+  team_members_id TEXT PRIMARY KEY,
+  team_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  role user_role_enum,
+  invited_at TIMESTAMPTZ,
+  joined_at TIMESTAMPTZ,
   CONSTRAINT team_members_team_id_fk FOREIGN KEY (team_id)
-    REFERENCES teams(team_id)
-    ON DELETE CASCADE,
+  REFERENCES teams (team_id)
+  ON DELETE CASCADE,
   CONSTRAINT team_members_user_id_fk FOREIGN KEY (user_id)
-    REFERENCES users(user_id)
-    ON DELETE CASCADE,
-  CONSTRAINT team_members_team_user_uq UNIQUE(team_id, user_id)
+  REFERENCES users (user_id)
+  ON DELETE CASCADE,
+  CONSTRAINT team_members_team_user_uq UNIQUE (team_id, user_id)
 );
 
 -- tasks
-CREATE TABLE tasks(
-  task_id           TEXT PRIMARY KEY,
-  team_id           TEXT NOT NULL,
-  assigned_to       TEXT,
-  created_by        TEXT,
-  title             VARCHAR(100) NOT NULL,
-  description       VARCHAR(300),
-  status            task_status_enum NOT NULL DEFAULT 'pending',
-  priority          task_priority_enum NOT NULL DEFAULT 'medium',
-  deadline          TIMESTAMPTZ NOT NULL,
-  content           TEXT,
-  last_modified_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+CREATE TABLE tasks (
+  task_id TEXT PRIMARY KEY,
+  team_id TEXT NOT NULL,
+  assigned_to TEXT,
+  created_by TEXT,
+  title VARCHAR(100) NOT NULL,
+  description VARCHAR(300),
+  status task_status_enum NOT NULL DEFAULT 'pending',
+  priority task_priority_enum NOT NULL DEFAULT 'medium',
+  deadline TIMESTAMPTZ NOT NULL,
+  content TEXT,
+  last_modified_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   CONSTRAINT tasks_team_id_fk FOREIGN KEY (team_id)
-    REFERENCES teams(team_id)
-    ON DELETE CASCADE,
+  REFERENCES teams (team_id)
+  ON DELETE CASCADE,
   CONSTRAINT tasks_assigned_to_fk FOREIGN KEY (assigned_to)
-    REFERENCES users(user_id)
-    ON DELETE SET NULL,
+  REFERENCES users (user_id)
+  ON DELETE SET NULL,
   CONSTRAINT tasks_created_by_fk FOREIGN KEY (created_by)
-    REFERENCES users(user_id)
-    ON DELETE SET NULL
+  REFERENCES users (user_id)
+  ON DELETE SET NULL
   -- No "deadline > NOW()" check: NOW() is non-immutable and Postgres
   -- evaluates a CHECK only at INSERT / UPDATE time, so a constraint of
   -- "always in the future" can never actually hold. Validation that the
   -- deadline is in the future belongs in the service layer at write time.
 ); -- A task whose assigned_to or created_by user is deleted becomes
-   -- orphaned (those FKs are ON DELETE SET NULL) but the task survives.
+-- orphaned (those FKs are ON DELETE SET NULL) but the task survives.
 
 -- task tags
-CREATE TABLE task_tags(
-  task_tags_id  TEXT PRIMARY KEY,
-  task_id       TEXT NOT NULL,
-  tag_id        TEXT NOT NULL,
+CREATE TABLE task_tags (
+  task_tags_id TEXT PRIMARY KEY,
+  task_id TEXT NOT NULL,
+  tag_id TEXT NOT NULL,
   CONSTRAINT task_tags_task_id_fk FOREIGN KEY (task_id)
-    REFERENCES tasks(task_id)
-    ON DELETE CASCADE,
+  REFERENCES tasks (task_id)
+  ON DELETE CASCADE,
   CONSTRAINT task_tags_tag_id_fk FOREIGN KEY (tag_id)
-    REFERENCES tags(tag_id)
-    ON DELETE CASCADE,
+  REFERENCES tags (tag_id)
+  ON DELETE CASCADE,
   CONSTRAINT task_tags_uq UNIQUE (task_id, tag_id)
 );
 
@@ -133,33 +133,33 @@ CREATE TABLE task_tags(
 -- exclusively by the audit triggers below, never by application code,
 -- so there is no client-side ID to provide. UUID + gen_random_uuid()
 -- lets Postgres generate the key in-trigger without an extension.
-CREATE TABLE task_history(
-  history_id    UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  task_id       TEXT NOT NULL,
-  change_type   VARCHAR(10) NOT NULL, -- UPDATE, CREATE, DELETE
-  entity        VARCHAR(10) NOT NULL, -- TASK, COMMENT, TAG
-  field         VARCHAR(50),
-  old_value     TEXT,
-  new_value     TEXT,
-  changed_at    TIMESTAMPTZ DEFAULT NOW(),
+CREATE TABLE task_history (
+  history_id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  task_id TEXT NOT NULL,
+  change_type VARCHAR(10) NOT NULL, -- UPDATE, CREATE, DELETE
+  entity VARCHAR(10) NOT NULL, -- TASK, COMMENT, TAG
+  field VARCHAR(50),
+  old_value TEXT,
+  new_value TEXT,
+  changed_at TIMESTAMPTZ DEFAULT now(),
   CONSTRAINT task_history_task_id_fk FOREIGN KEY (task_id)
-    REFERENCES tasks(task_id)
-    ON DELETE CASCADE
+  REFERENCES tasks (task_id)
+  ON DELETE CASCADE
 );
 
 -- comments
-CREATE TABLE comments(
-  comment_id    TEXT PRIMARY KEY,
-  task_id       TEXT NOT NULL,
-  author_id     TEXT,
-  content       VARCHAR(300),
-  created_at    TIMESTAMPTZ DEFAULT NOW(),
+CREATE TABLE comments (
+  comment_id TEXT PRIMARY KEY,
+  task_id TEXT NOT NULL,
+  author_id TEXT,
+  content VARCHAR(300),
+  created_at TIMESTAMPTZ DEFAULT now(),
   CONSTRAINT comments_task_id_fk FOREIGN KEY (task_id)
-    REFERENCES tasks(task_id)
-    ON DELETE CASCADE,
+  REFERENCES tasks (task_id)
+  ON DELETE CASCADE,
   CONSTRAINT comments_author_id_fk FOREIGN KEY (author_id)
-    REFERENCES users(user_id)
-    ON DELETE SET NULL
+  REFERENCES users (user_id)
+  ON DELETE SET NULL
 );
 
 
@@ -173,21 +173,21 @@ CREATE TABLE comments(
 -- as the tables grow. The composite indexes target combinations used by
 -- the task list endpoint when filtering by status and priority together.
 
-CREATE INDEX tasks_team_id_idx           ON tasks(team_id);
-CREATE INDEX tasks_assigned_to_idx       ON tasks(assigned_to);
-CREATE INDEX tasks_created_by_idx        ON tasks(created_by);
-CREATE INDEX tasks_deadline_idx          ON tasks(deadline);
-CREATE INDEX tasks_status_priority_idx   ON tasks(status, priority);
+CREATE INDEX tasks_team_id_idx ON tasks (team_id);
+CREATE INDEX tasks_assigned_to_idx ON tasks (assigned_to);
+CREATE INDEX tasks_created_by_idx ON tasks (created_by);
+CREATE INDEX tasks_deadline_idx ON tasks (deadline);
+CREATE INDEX tasks_status_priority_idx ON tasks (status, priority);
 
-CREATE INDEX comments_task_id_idx        ON comments(task_id);
-CREATE INDEX comments_author_id_idx      ON comments(author_id);
+CREATE INDEX comments_task_id_idx ON comments (task_id);
+CREATE INDEX comments_author_id_idx ON comments (author_id);
 
-CREATE INDEX team_members_user_id_idx    ON team_members(user_id);
+CREATE INDEX team_members_user_id_idx ON team_members (user_id);
 
-CREATE INDEX task_tags_tag_id_idx        ON task_tags(tag_id);
+CREATE INDEX task_tags_tag_id_idx ON task_tags (tag_id);
 
-CREATE INDEX task_history_task_id_idx    ON task_history(task_id);
-CREATE INDEX task_history_changed_at_idx ON task_history(changed_at DESC);
+CREATE INDEX task_history_task_id_idx ON task_history (task_id);
+CREATE INDEX task_history_changed_at_idx ON task_history (changed_at DESC);
 
 
 -- ====================================
