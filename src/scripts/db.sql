@@ -34,8 +34,7 @@ CREATE TABLE users(
   pwd_hash      TEXT NOT NULL,
   role          user_role_enum NOT NULL,
   created_at    TIMESTAMPTZ DEFAULT NOW(),
-  last_login    TIMESTAMPTZ DEFAULT NULL,
-  CONSTRAINT users_username_uq UNIQUE(username), 
+  CONSTRAINT users_username_uq UNIQUE(username),
   CONSTRAINT users_email_uq UNIQUE(email)
 );
 
