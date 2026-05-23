@@ -9,6 +9,7 @@ import commentsRouter from './routes/comments';
 import swaggerUi from "swagger-ui-express";
 import YAML from "yamljs";
 import { requestLogger } from "./middleware/RequestLogger";
+import { userContext } from "./middleware/UserContext";
 import { notFoundHandler } from "./middleware/NotFound";
 import { errorHandler } from "./middleware/ErrorHandler";
 
@@ -19,6 +20,7 @@ export function createApp() {
   app.use(cors());
   app.use(express.json());
   app.use(requestLogger);
+  app.use(userContext);
   app.use("/users", usersRouter);
   app.use("/teams", teamsRouter);
   app.use('/tasks', tasksRouter);

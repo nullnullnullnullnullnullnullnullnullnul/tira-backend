@@ -1,4 +1,4 @@
-import pool from '../db';
+import pool, { Executor } from '../db';
 import { User, UserFilter } from '../models/user';
 import { PaginatedResult, createPaginatedResult } from '../models/pagination';
 
@@ -12,7 +12,8 @@ import { PaginatedResult, createPaginatedResult } from '../models/pagination';
 export async function selectUsers(
   filter: UserFilter = {},
   page: number = 1,
-  pageSize: number = 100
+  pageSize: number = 100,
+  db: Executor = pool,
 ): Promise<PaginatedResult<User>> {
   const conditions: string[] = [];
   const values: any[] = [];
@@ -29,7 +30,7 @@ export async function selectUsers(
   const where: string = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   const offset: number = (page - 1) * pageSize;
   values.push(pageSize, offset);
-  const result = await pool.query(`
+  const result = await db.query(`
     SELECT *,
       COUNT(*) OVER() as total_count
     FROM users
@@ -43,8 +44,8 @@ export async function selectUsers(
 }
 
 // Add user
-export async function insertUser(user: User): Promise<User> {
-  const result = await pool.query(`
+export async function insertUser(user: User, db: Executor = pool): Promise<User> {
+  const result = await db.query(`
     INSERT INTO users(
       user_id,
       username,
@@ -69,7 +70,8 @@ export async function insertUser(user: User): Promise<User> {
 // - Password
 export async function updateUser(
   user_id: string,
-  fields: Partial<Omit<User, 'user_id' | 'role' | 'created_at'>>
+  fields: Partial<Omit<User, 'user_id' | 'role' | 'created_at'>>,
+  db: Executor = pool,
 ): Promise<User | null> {
   const keys = Object.keys(fields) as (keyof typeof fields)[];
   // keys = ["username", "email", "pwd_hash"]
@@ -77,7 +79,7 @@ export async function updateUser(
   // set = ["username = $1", "email = $2", "pwd_hash = $3"]
   const values = keys.map(k => fields[k]);
   // values = ["newUsername", "newMail@example.com", "pwdhash"]
-  const result = await pool.query(`
+  const result = await db.query(`
     UPDATE users
     SET ${set.join(', ')}
     WHERE user_id = $${keys.length + 1}
@@ -89,9 +91,9 @@ export async function updateUser(
 }
 
 // Removes user
-export async function deleteUser(id: string): Promise<boolean> {
-  const result = await pool.query(`
-    DELETE 
+export async function deleteUser(id: string, db: Executor = pool): Promise<boolean> {
+  const result = await db.query(`
+    DELETE
     FROM users
     WHERE user_id = $1
     `,

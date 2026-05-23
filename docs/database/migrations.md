@@ -118,29 +118,35 @@ is correct.
 ## Audit log: how `changed_by` gets populated
 
 Triggers in `0011_create-audit-functions.sql` (rewritten by
-`0014_audit-changed-by.sql`) read a Postgres session setting at write
+`0014_audit-changed-by.sql` and corrected by `0015_audit-coalesce-
+empty-current-setting.sql`) read a Postgres session setting at write
 time:
 
 ```sql
-acting_user TEXT := current_setting('app.current_user_id', true);
+acting_user TEXT := NULLIF(current_setting('app.current_user_id', true), '');
 ```
 
 The application is expected to emit, at the start of every transaction
 that performs writes:
 
 ```sql
-SET LOCAL app.current_user_id = '<authenticated-user-ulid>';
+SELECT set_config('app.current_user_id', $1, true);
 ```
 
-`SET LOCAL` scopes the setting to the current transaction so the value
-does not leak into the next pooled connection user. `current_setting`
-with the `missing_ok = true` flag returns `NULL` when nothing has been
-set, so audit rows from un-authenticated writes (and from migrations
-applied before the wiring middleware exists) carry `changed_by = NULL`
-without erroring.
+The third argument `is_local = true` scopes the setting to the
+current transaction so the value cannot leak into the next pooled
+connection user. The `NULLIF(..., '')` wrap is important:
+`current_setting(..., missing_ok)` returns the *empty string*, not
+NULL, when no value has been set in the current transaction. Without
+the NULLIF, audit rows from un-attributed writes would record
+`changed_by = ''`, breaking the convention that NULL means "we do
+not know who".
 
-The middleware that emits the `SET LOCAL` is intentionally not yet in
-place. It depends on the authentication flow (JWT, planned per the
-README roadmap) and on a transaction-aware request handler that holds
-one `pg.Client` for the lifetime of a request. Both land in the
-next PR.
+The middleware that emits the `set_config` lives in
+`src/utils/transaction.ts` (`withAuditedTransaction`). It is invoked
+by services that need atomicity plus audit attribution; see
+`createTask` and `updateTask` in `src/services/tasks.service.ts` for
+the pattern. Until JWT authentication ships, the user id arrives
+via the `X-User-Id` request header (parsed by
+`src/middleware/UserContext.ts`); that is intentionally an
+unauthenticated stand-in and is documented as such.

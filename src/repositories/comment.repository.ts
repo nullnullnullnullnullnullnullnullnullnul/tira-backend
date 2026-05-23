@@ -1,10 +1,10 @@
-import pool from '../db';
+import pool, { Executor } from '../db';
 import { Comment, CommentFilter } from '../models/comment';
 import { PaginatedResult, createPaginatedResult } from '../models/pagination';
 
 // Insert new comment
-export async function insertComment(comment: Comment): Promise<Comment | null> {
-  const result = await pool.query(`
+export async function insertComment(comment: Comment, db: Executor = pool): Promise<Comment | null> {
+  const result = await db.query(`
     INSERT INTO comments(comment_id, task_id, author_id, content, created_at)
     VALUES ($1, $2, $3, $4, $5)
     RETURNING *
@@ -14,8 +14,8 @@ export async function insertComment(comment: Comment): Promise<Comment | null> {
 }
 
 // Delete comment
-export async function deleteComment(comment_id: string): Promise<boolean> {
-  const result = await pool.query(`
+export async function deleteComment(comment_id: string, db: Executor = pool): Promise<boolean> {
+  const result = await db.query(`
     DELETE FROM comments
     WHERE comment_id = $1
   `,
@@ -30,7 +30,8 @@ export async function deleteComment(comment_id: string): Promise<boolean> {
 export async function selectComments(
   filter: CommentFilter = {},
   page: number = 1,
-  pageSize: number = 100
+  pageSize: number = 100,
+  db: Executor = pool,
 ): Promise<PaginatedResult<Comment>> {
   const conditions: string[] = [];
   const values: any[] = [];
@@ -42,7 +43,7 @@ export async function selectComments(
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   const offset = (page - 1) * pageSize;
   values.push(pageSize, offset);
-  const result = await pool.query(`
+  const result = await db.query(`
     SELECT *,
       COUNT(*) OVER() as total_count
     FROM comments
@@ -57,9 +58,10 @@ export async function selectComments(
 // Update comment content
 export async function updateComment(
   comment_id: string,
-  content: string
+  content: string,
+  db: Executor = pool,
 ): Promise<Comment | null> {
-  const result = await pool.query(`
+  const result = await db.query(`
     UPDATE comments
     SET content = $1
     WHERE comment_id = $2

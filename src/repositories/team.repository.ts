@@ -1,11 +1,11 @@
-import pool from '../db';
+import pool, { Executor } from '../db';
 import { Team, Invite, TeamMember, TeamFilter } from '../models/team';
 import { User } from '../models/user';
 import { PaginatedResult, createPaginatedResult } from '../models/pagination';
 
 // Add team
-export async function insertTeam(team: Team): Promise<Team | null> {
-  const result = await pool.query(`
+export async function insertTeam(team: Team, db: Executor = pool): Promise<Team | null> {
+  const result = await db.query(`
     INSERT INTO teams(
       team_id,
       owner_id,
@@ -22,7 +22,8 @@ export async function insertTeam(team: Team): Promise<Team | null> {
 // - name
 export async function updateTeam(
   id: string,
-  fields: Partial<Omit<Team, 'team_id' | 'owner_id' | 'created_at'>>
+  fields: Partial<Omit<Team, 'team_id' | 'owner_id' | 'created_at'>>,
+  db: Executor = pool,
 ): Promise<Team | null> {
   const keys = Object.keys(fields) as (keyof typeof fields)[];
   // keys = ["name"]
@@ -30,7 +31,7 @@ export async function updateTeam(
   // set = ["name = $1"]
   const values = keys.map(k => fields[k]);
   // values = ["newTeamName"]
-  const result = await pool.query(`
+  const result = await db.query(`
     UPDATE teams
     SET ${set.join(', ')}
     WHERE team_id = $${keys.length + 1}
@@ -42,10 +43,10 @@ export async function updateTeam(
 }
 
 // Remove a team
-export async function deleteTeam(id: string): Promise<boolean> {
-  const result = await pool.query(`
-    DELETE 
-    FROM teams 
+export async function deleteTeam(id: string, db: Executor = pool): Promise<boolean> {
+  const result = await db.query(`
+    DELETE
+    FROM teams
     WHERE team_id = $1
     `,
     [id]
@@ -57,7 +58,8 @@ export async function deleteTeam(id: string): Promise<boolean> {
 export async function selectTeams(
   filter: TeamFilter = {},
   page: number = 1,
-  pageSize: number = 100
+  pageSize: number = 100,
+  db: Executor = pool,
 ): Promise<PaginatedResult<Team>> {
   const conditions: string[] = [];
   const values: any[] = [];
@@ -76,7 +78,7 @@ export async function selectTeams(
   // Add pagination
   const offset = (page - 1) * pageSize;
   values.push(pageSize, offset);
-  const result = await pool.query(`
+  const result = await db.query(`
     SELECT *,
       COUNT(*) OVER() as total_count
     FROM teams
@@ -93,10 +95,11 @@ export async function selectTeams(
 export async function selectTeamsByUser(
   user_id: string,
   page: number = 1,
-  pageSize: number = 100
+  pageSize: number = 100,
+  db: Executor = pool,
 ): Promise<PaginatedResult<Team>> {
   const offset = (page - 1) * pageSize;
-  const result = await pool.query(`
+  const result = await db.query(`
     SELECT t.team_id,
            t.owner_id,
            t.name,
@@ -114,8 +117,8 @@ export async function selectTeamsByUser(
 }
 
 // Add user to team
-export async function insertTeamMember(invite: Invite): Promise<TeamMember | null> {
-  const result = await pool.query(`
+export async function insertTeamMember(invite: Invite, db: Executor = pool): Promise<TeamMember | null> {
+  const result = await db.query(`
     INSERT INTO team_members(
       team_members_id,
       team_id,
@@ -135,8 +138,8 @@ export async function insertTeamMember(invite: Invite): Promise<TeamMember | nul
 }
 
 // Remove user from team
-export async function deleteTeamMember(user_id: string, team_id: string): Promise<boolean> {
-  const result = await pool.query(`
+export async function deleteTeamMember(user_id: string, team_id: string, db: Executor = pool): Promise<boolean> {
+  const result = await db.query(`
     DELETE
     FROM team_members
     WHERE user_id = $1
@@ -151,10 +154,11 @@ export async function deleteTeamMember(user_id: string, team_id: string): Promis
 export async function selectMembers(
   team_id: string,
   page: number = 1,
-  pageSize: number = 100
+  pageSize: number = 100,
+  db: Executor = pool,
 ): Promise<PaginatedResult<User>> {
   const offset = (page - 1) * pageSize;
-  const result = await pool.query(`
+  const result = await db.query(`
     SELECT u.user_id,
            u.username,
            u.email,

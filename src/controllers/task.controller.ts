@@ -85,7 +85,7 @@ export async function createTask(
       deadline,
       content
     } = req.body;
-    const newTask: Task = await taskService.createTask(created_by, {
+    const newTask: Task = await taskService.createTask(req.userId, created_by, {
       team_id,
       assigned_to,
       title,
@@ -109,7 +109,7 @@ export async function updateTask(
 ) {
   try {
     const { task_id } = req.params;
-    const updatedTask: Task = await taskService.updateTask(task_id, req.body);
+    const updatedTask: Task = await taskService.updateTask(req.userId, task_id, req.body);
     res.json(updatedTask);
   } catch (err) {
     next(err);
