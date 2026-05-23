@@ -24,6 +24,22 @@ jobs:
       - name: TypeScript build
         run: npm run build
 
+  sql-lint:
+    name: sqlfluff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install sqlfluff
+        run: pip install sqlfluff
+
+      - name: Lint SQL
+        run: sqlfluff lint src/scripts/db.sql
+
   schema:
     name: apply schema to postgres
     runs-on: ubuntu-latest

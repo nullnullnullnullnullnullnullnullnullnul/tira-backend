@@ -1,0 +1,52 @@
+[sqlfluff]
+# Postgres-specific grammar (TIMESTAMPTZ, $$ ... $$ functions, gen_random_uuid, ::, etc.)
+dialect = postgres
+# Disabled rules:
+# - layout.long_lines: long CREATE TABLE columns and trigger bodies are
+#   hard to break without hurting readability.
+# - ambiguous.column_count: we use COUNT(*) OVER() for paginated totals.
+# - references.keywords: 'role', 'name', 'content' are non-reserved
+#   identifiers in Postgres and part of the existing API contract.
+#   Renaming them would force a coordinated change across every
+#   repository, DTO, and the frontend.
+exclude_rules = layout.long_lines, ambiguous.column_count, references.keywords
+
+[sqlfluff:indentation]
+# Match the 2-space indent declared in .editorconfig
+tab_space_size = 2
+# JOIN at same level as FROM
+indented_joins = false
+# ON clause indented one level under its JOIN
+indented_using_on = true
+
+[sqlfluff:rules:capitalisation.keywords]
+# SELECT, FROM, WHERE, CREATE, ALTER... uppercase
+capitalisation_policy = upper
+
+[sqlfluff:rules:capitalisation.identifiers]
+# Table and column names lowercase (snake_case)
+extended_capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.functions]
+# Lowercase to match snake_case user-defined functions like
+# set_last_modified_at_fn() and log_task_changes_fn(). Built-ins
+# (now, count, coalesce, gen_random_uuid) follow the same rule.
+# This is also the Postgres documentation convention.
+extended_capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.types]
+# Built-in types uppercase (INT, VARCHAR, TIMESTAMPTZ) but only when
+# they are actually built-ins. Custom enum types declared in this
+# schema (user_role_enum, task_status_enum, task_priority_enum)
+# resolve as identifiers, not types, so they stay lowercase per the
+# identifiers rule above.
+extended_capitalisation_policy = upper
+ignore_words = user_role_enum, task_status_enum, task_priority_enum
+
+[sqlfluff:rules:convention.not_equal]
+# Use <> instead of !=
+preferred_not_equal_style = ansi
+
+[sqlfluff:rules:convention.casting_style]
+# Use x::INT instead of CAST(x AS INT)
+preferred_type_casting_style = shorthand
