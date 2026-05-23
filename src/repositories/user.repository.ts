@@ -20,8 +20,8 @@ export async function selectUsers(
   Object.entries(filter).forEach(([key, value]) => {
     if (value === undefined || value === null) return;
     if (key === 'username') {
-      values.push(`%${String(value).toLowerCase()}%`);
-      conditions.push(`LOWER(username) LIKE $${values.length}`);
+      values.push(`%${value}%`);
+      conditions.push(`username ILIKE $${values.length}`);
     } else {
       values.push(value);
       conditions.push(`${key} = $${values.length}`);
