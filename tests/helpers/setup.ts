@@ -64,3 +64,26 @@ export async function seedMembership(teamId: string, userId: string, role: "lead
     [ulid(), teamId, userId, role],
   );
 }
+
+/**
+ * Insert a task directly (bypassing the service) for tests that
+ * need a task to exist as a precondition.
+ */
+export async function seedTask(teamId: string, createdBy: string, assignedTo: string, title: string): Promise<string> {
+  const task_id = ulid();
+  await pool.query(
+    `INSERT INTO tasks (task_id, team_id, assigned_to, created_by, title, deadline)
+     VALUES ($1, $2, $3, $4, $5, now() + INTERVAL '1 day')`,
+    [task_id, teamId, assignedTo, createdBy, title],
+  );
+  return task_id;
+}
+
+/**
+ * Insert a tag directly (bypassing the service).
+ */
+export async function seedTag(teamId: string, name: string): Promise<string> {
+  const tag_id = ulid();
+  await pool.query(`INSERT INTO tags (tag_id, team_id, name) VALUES ($1, $2, $3)`, [tag_id, teamId, name]);
+  return tag_id;
+}

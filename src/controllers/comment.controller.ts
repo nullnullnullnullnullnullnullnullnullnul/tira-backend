@@ -21,7 +21,7 @@ export async function createComment(
   try {
     const { task_id } = req.params;
     const { author_id, content } = req.body;
-    const comment = await commentService.createComment(task_id, author_id, content);
+    const comment = await commentService.createComment(req.userId, task_id, author_id, content);
     res.status(201).json(comment);
   } catch (err) {
     next(err);
