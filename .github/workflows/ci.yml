@@ -24,24 +24,8 @@ jobs:
       - name: TypeScript build
         run: npm run build
 
-  sql-lint:
-    name: sqlfluff
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-
-      - name: Install sqlfluff
-        run: pip install sqlfluff
-
-      - name: Lint SQL
-        run: sqlfluff lint src/scripts/db.sql
-
   schema:
-    name: apply schema to postgres
+    name: apply migrations to postgres
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -60,6 +44,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Install psql client
         run: |
           sudo apt-get update
@@ -72,17 +64,17 @@ jobs:
           psql -h localhost -U postgres -c "CREATE USER tira WITH PASSWORD 'tira' SUPERUSER;"
           psql -h localhost -U postgres -c "CREATE DATABASE tira_db OWNER tira;"
 
-      - name: Apply schema
+      - name: Run migrations
         env:
-          PGPASSWORD: tira
-        run: psql -h localhost -U tira -d tira_db -v ON_ERROR_STOP=1 -f src/scripts/db.sql
+          DATABASE_URL: postgres://tira:tira@localhost:5432/tira_db
+        run: npm run db:migrate
 
       - name: Verify expected tables exist
         env:
           PGPASSWORD: tira
         run: |
           tables=$(psql -h localhost -U tira -d tira_db -t -A -c \
-            "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename")
+            "SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename != 'pgmigrations' ORDER BY tablename")
           expected="comments
           tags
           task_history
@@ -94,11 +86,27 @@ jobs:
           # Strip leading whitespace from the heredoc
           expected=$(echo "$expected" | sed 's/^[[:space:]]*//')
           if [ "$tables" != "$expected" ]; then
-            echo "::error::Schema apply produced unexpected table set"
+            echo "::error::Migrations produced unexpected table set"
             echo "Got:"
             echo "$tables"
             echo "Expected:"
             echo "$expected"
             exit 1
           fi
-          echo "All 8 expected tables present."
+          echo "All 8 expected tables present (plus pgmigrations meta)."
+
+  sql-lint:
+    name: sqlfluff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install sqlfluff
+        run: pip install sqlfluff
+
+      - name: Lint SQL
+        run: sqlfluff lint migrations/

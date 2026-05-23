@@ -7,12 +7,14 @@
     "dev": "cross-env DB_PORT=5432 bash scripts/setup_db.sh && cross-env DB_PORT=5432 ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc -p .",
     "start": "cross-env DB_PORT=5432 ts-node src/index.ts",
-    "db:init": "cross-env DB_PORT=5432 bash scripts/setup_db.sh",
+    "db:init": "cross-env DB_PORT=5432 bash scripts/setup_db.sh && npm run db:reset",
+    "db:reset": "cross-env DB_PORT=5432 ts-node src/scripts/prep.ts && npm run db:migrate && npm run db:seed",
     "db:start": "pg_ctl -D .postgres_data -l postgres.log -o \"-p 5432 -k /tmp\" start",
     "db:stop": "pg_ctl -D .postgres_data stop",
     "db:migrate": "node-pg-migrate -m migrations -j sql up",
     "db:migrate:down": "node-pg-migrate -m migrations -j sql down",
-    "db:migrate:create": "node-pg-migrate -m migrations -j sql create"
+    "db:migrate:create": "node-pg-migrate -m migrations -j sql create",
+    "db:seed": "cross-env DB_PORT=5432 ts-node src/scripts/seed.ts"
   },
   "keywords": [],
   "author": "",
