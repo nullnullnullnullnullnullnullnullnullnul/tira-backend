@@ -162,8 +162,28 @@ export async function updateTask(
   });
 }
 
-// Delete task
-export async function deleteTask(task_id: string): Promise<void> {
-  await getTaskById(task_id); // Throws NotFoundError
-  await taskRepository.deleteTask(task_id);
+// Delete task.
+//
+// Wrapped in withAuditedTransaction even though the observable effect
+// on task_history is nil: the CASCADE from tasks to task_tags fires
+// log_tag_activity_fn for each detached tag (which writes a
+// task_history row with changed_by = acting_user thanks to the
+// set_config), but the CASCADE from tasks to task_history then wipes
+// every history row for the now-gone task in the same transaction.
+// The wrap matters anyway because (a) the brief in-transaction window
+// has the correct attribution, (b) it is the right pattern to copy
+// for the next contributor adding an audited write path, and (c) if
+// the cascade rule on task_history.task_id ever changes to
+// ON DELETE SET NULL (one possible fix for the "task deletion leaves
+// no surviving trail" gap documented in docs/database/decisions.md),
+// the attribution becomes observable for free.
+export async function deleteTask(
+  actingUserId: string | undefined,
+  task_id: string,
+): Promise<void> {
+  return withAuditedTransaction(actingUserId, async (db) => {
+    const task = (await taskRepository.selectTask({ task_id }, 1, 1, db)).data[0];
+    if (!task) throw new NotFoundError('Task');
+    await taskRepository.deleteTask(task_id, db);
+  });
 }
