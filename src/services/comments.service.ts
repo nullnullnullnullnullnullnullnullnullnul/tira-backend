@@ -87,7 +87,9 @@ export async function updateComment(
     throw new ValidationError('Comment content must be between 1 and 300 characters');
   }
   // Check if comment exists
-  await getComments({ comment_id }, 0, 1);
+  if (!(await commentRepository.selectCommentById(comment_id))) {
+    throw new NotFoundError('Comment');
+  }
   const updated = await commentRepository.updateComment(comment_id, content);
   if (!updated) throw new NotFoundError('Comment');
   return updated;
@@ -98,6 +100,8 @@ export async function updateComment(
 // Not wrapped in a transaction: DELETE comments does NOT fire any
 // audit trigger.
 export async function deleteComment(comment_id: string): Promise<void> {
-  await getComments({ comment_id }, 0, 1);
+  if (!(await commentRepository.selectCommentById(comment_id))) {
+    throw new NotFoundError('Comment');
+  }
   await commentRepository.deleteComment(comment_id);
 }

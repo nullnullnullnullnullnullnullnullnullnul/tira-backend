@@ -23,6 +23,21 @@ export async function deleteComment(comment_id: string, db: Executor = pool): Pr
   return (result.rowCount ?? 0) > 0;
 }
 
+// Single-row lookup by primary key. Returns null when not found.
+// Backed by the comments_pkey index, so this is a single index
+// probe; prefer it over selectComments({ comment_id }, ...) when
+// only the existence-plus-row answer is needed.
+export async function selectCommentById(
+  comment_id: string,
+  db: Executor = pool,
+): Promise<Comment | null> {
+  const result = await db.query(
+    `SELECT * FROM comments WHERE comment_id = $1`,
+    [comment_id],
+  );
+  return result.rows[0] ?? null;
+}
+
 // Select comments with optional filters:
 // - comment_id
 // - task_id
