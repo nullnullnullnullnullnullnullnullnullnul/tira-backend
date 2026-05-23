@@ -28,7 +28,7 @@ CREATE TYPE task_priority_enum AS ENUM('high', 'medium', 'low');
 
 -- users
 CREATE TABLE users(
-  user_id       CHAR(26) PRIMARY KEY,
+  user_id       TEXT PRIMARY KEY,
   username      VARCHAR(50) NOT NULL,
   email         VARCHAR(254),
   pwd_hash      TEXT NOT NULL,
@@ -40,8 +40,8 @@ CREATE TABLE users(
 
 -- teams
 CREATE TABLE teams(
-  team_id       CHAR(26) PRIMARY KEY,
-  owner_id      CHAR(26) NOT NULL,
+  team_id       TEXT PRIMARY KEY,
+  owner_id      TEXT NOT NULL,
   name          VARCHAR(50) NOT NULL,
   created_at    TIMESTAMPTZ DEFAULT NOW(),
   CONSTRAINT teams_owner_id_fk FOREIGN KEY (owner_id)
@@ -54,8 +54,8 @@ CREATE TABLE teams(
 
 -- tags
 CREATE TABLE tags(
-  tag_id        CHAR(26) PRIMARY KEY,
-  team_id       CHAR(26) NOT NULL,
+  tag_id        TEXT PRIMARY KEY,
+  team_id       TEXT NOT NULL,
   name          VARCHAR(20) NOT NULL,
   CONSTRAINT tags_team_id_fk FOREIGN KEY (team_id)
     REFERENCES teams(team_id)
@@ -65,9 +65,9 @@ CREATE TABLE tags(
 
 -- team members
 CREATE TABLE team_members(
-  team_members_id   CHAR(26) PRIMARY KEY,
-  team_id           CHAR(26) NOT NULL,
-  user_id           CHAR(26) NOT NULL,
+  team_members_id   TEXT PRIMARY KEY,
+  team_id           TEXT NOT NULL,
+  user_id           TEXT NOT NULL,
   role              user_role_enum,
   invited_at        TIMESTAMPTZ,
   joined_at         TIMESTAMPTZ,
@@ -82,10 +82,10 @@ CREATE TABLE team_members(
 
 -- tasks
 CREATE TABLE tasks(
-  task_id           CHAR(26) PRIMARY KEY,
-  team_id           CHAR(26) NOT NULL,
-  assigned_to       CHAR(26),
-  created_by        CHAR(26),
+  task_id           TEXT PRIMARY KEY,
+  team_id           TEXT NOT NULL,
+  assigned_to       TEXT,
+  created_by        TEXT,
   title             VARCHAR(100) NOT NULL,
   description       VARCHAR(300),
   status            task_status_enum NOT NULL DEFAULT 'pending',
@@ -111,9 +111,9 @@ CREATE TABLE tasks(
 
 -- task tags
 CREATE TABLE task_tags(
-  task_tags_id  CHAR(26) PRIMARY KEY,
-  task_id       CHAR(26) NOT NULL,
-  tag_id        CHAR(26) NOT NULL,
+  task_tags_id  TEXT PRIMARY KEY,
+  task_id       TEXT NOT NULL,
+  tag_id        TEXT NOT NULL,
   CONSTRAINT task_tags_task_id_fk FOREIGN KEY (task_id)
     REFERENCES tasks(task_id)
     ON DELETE CASCADE,
@@ -126,7 +126,7 @@ CREATE TABLE task_tags(
 -- task history
 CREATE TABLE task_history(
   history_id    UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  task_id       CHAR(26) NOT NULL,
+  task_id       TEXT NOT NULL,
   change_type   VARCHAR(10) NOT NULL, -- UPDATE, CREATE, DELETE
   entity        VARCHAR(10) NOT NULL, -- TASK, COMMENT, TAG
   field         VARCHAR(50),
@@ -140,9 +140,9 @@ CREATE TABLE task_history(
 
 -- comments
 CREATE TABLE comments(
-  comment_id    CHAR(26) PRIMARY KEY,
-  task_id       CHAR(26) NOT NULL,
-  author_id     CHAR(26),
+  comment_id    TEXT PRIMARY KEY,
+  task_id       TEXT NOT NULL,
+  author_id     TEXT,
   content       VARCHAR(300),
   created_at    TIMESTAMPTZ DEFAULT NOW(),
   CONSTRAINT comments_task_id_fk FOREIGN KEY (task_id)
