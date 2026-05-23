@@ -102,9 +102,13 @@ CREATE TABLE tasks(
     ON DELETE SET NULL,
   CONSTRAINT tasks_created_by_fk FOREIGN KEY (created_by)
     REFERENCES users(user_id)
-    ON DELETE SET NULL,
-  CONSTRAINT tasks_deadline_ck CHECK (deadline IS NULL OR deadline > NOW())
-); -- May be orphaned but we dont lose them.
+    ON DELETE SET NULL
+  -- No "deadline > NOW()" check: NOW() is non-immutable and Postgres
+  -- evaluates a CHECK only at INSERT / UPDATE time, so a constraint of
+  -- "always in the future" can never actually hold. Validation that the
+  -- deadline is in the future belongs in the service layer at write time.
+); -- A task whose assigned_to or created_by user is deleted becomes
+   -- orphaned (those FKs are ON DELETE SET NULL) but the task survives.
 
 -- task tags
 CREATE TABLE task_tags(
