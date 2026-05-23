@@ -160,7 +160,6 @@ export async function selectMembers(
            u.email,
            u.role,
            u.created_at,
-           u.last_login,
            COUNT(*) OVER() as total_count
     FROM team_members tm
     INNER JOIN users u ON tm.user_id = u.user_id

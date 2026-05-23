@@ -79,7 +79,6 @@ export async function insertUser(
     email: fields.email,
     role: fields.role,
     created_at: new Date().toISOString(),
-    last_login: null,
     pwd_hash: pwd_hash
   }
   const inserted: User = await userRepository.insertUser(newUser);

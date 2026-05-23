@@ -51,13 +51,12 @@ export async function insertUser(user: User): Promise<User> {
       email,
       role,
       created_at,
-      last_login,
       pwd_hash
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+    ) VALUES ($1, $2, $3, $4, $5, $6)
     RETURNING *
     `,
     [user.user_id, user.username, user.email,
-    user.role, user.created_at, user.last_login,
+    user.role, user.created_at,
     user.pwd_hash
     ]
   );
@@ -70,7 +69,7 @@ export async function insertUser(user: User): Promise<User> {
 // - Password
 export async function updateUser(
   user_id: string,
-  fields: Partial<Omit<User, 'user_id' | 'role' | 'created_at' | 'last_login'>>
+  fields: Partial<Omit<User, 'user_id' | 'role' | 'created_at'>>
 ): Promise<User | null> {
   const keys = Object.keys(fields) as (keyof typeof fields)[];
   // keys = ["username", "email", "pwd_hash"]
