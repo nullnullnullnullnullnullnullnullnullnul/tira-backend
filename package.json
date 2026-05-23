@@ -4,12 +4,15 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "cross-env DB_PORT=5432 bash scripts/setup_db.sh && ts-node-dev src/scripts/init.ts && cross-env DB_PORT=5432 ts-node-dev --respawn --transpile-only src/index.ts",
+    "dev": "cross-env DB_PORT=5432 bash scripts/setup_db.sh && cross-env DB_PORT=5432 ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc -p .",
     "start": "cross-env DB_PORT=5432 ts-node src/index.ts",
     "db:init": "cross-env DB_PORT=5432 bash scripts/setup_db.sh",
     "db:start": "pg_ctl -D .postgres_data -l postgres.log -o \"-p 5432 -k /tmp\" start",
-    "db:stop": "pg_ctl -D .postgres_data stop"
+    "db:stop": "pg_ctl -D .postgres_data stop",
+    "db:migrate": "node-pg-migrate -m migrations -j sql up",
+    "db:migrate:down": "node-pg-migrate -m migrations -j sql down",
+    "db:migrate:create": "node-pg-migrate -m migrations -j sql create"
   },
   "keywords": [],
   "author": "",
@@ -40,6 +43,7 @@
     "@types/swagger-ui-express": "^4.1.8",
     "cross-env": "^10.0.0",
     "jest": "^30.1.3",
+    "node-pg-migrate": "^8.0.4",
     "ts-jest": "^29.4.1",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
