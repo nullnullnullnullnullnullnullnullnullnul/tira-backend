@@ -124,7 +124,7 @@ export async function deleteTask(
 ) {
   try {
     const { task_id } = req.params;
-    await taskService.deleteTask(task_id);
+    await taskService.deleteTask(req.userId, task_id);
     res.status(204).send();
   } catch (err) {
     next(err);
