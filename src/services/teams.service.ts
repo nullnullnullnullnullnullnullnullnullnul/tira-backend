@@ -78,8 +78,9 @@ export async function addUserToTeam(
   const team = (await teamRepository.selectTeams({ team_id: team_id }, 1, 1)).data[0];
   if (!team) throw new NotFoundError('Team');
   // User is not a member of the team
-  const members = await teamRepository.selectMembers(team_id);
-  if (members.data.find(m => m.user_id === user_id)) throw new ConflictError('User is already in the team');
+  if (await teamRepository.isTeamMember(team_id, user_id)) {
+    throw new ConflictError('User is already in the team');
+  }
   const invite: Invite = {
     team_members_id: ulid(),
     team_id,

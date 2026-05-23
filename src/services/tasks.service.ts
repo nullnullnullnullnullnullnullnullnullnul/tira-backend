@@ -69,8 +69,7 @@ export async function createTask(
     const assignedUser = (await userRepository.selectUsers({ user_id: fields.assigned_to }, 1, 1, db)).data[0];
     if (!assignedUser) throw new NotFoundError('User');
     // Check if assigned user is a member of the team
-    const members = await teamRepository.selectMembers(fields.team_id, 1, 100, db);
-    if (!members.data.find(m => m.user_id === fields.assigned_to)) {
+    if (!(await teamRepository.isTeamMember(fields.team_id, fields.assigned_to, db))) {
       throw new ValidationError('Assigned user is not a member of the team');
     }
     const task: Task = {
@@ -151,8 +150,7 @@ export async function updateTask(
       const newAssignee = fields.assigned_to;
       const assignedUser = (await userRepository.selectUsers({ user_id: newAssignee }, 1, 1, db)).data[0];
       if (!assignedUser) throw new NotFoundError('Assigned user');
-      const members = await teamRepository.selectMembers(task.team_id, 1, 100, db);
-      if (!members.data.find(m => m.user_id === newAssignee)) {
+      if (!(await teamRepository.isTeamMember(task.team_id, newAssignee, db))) {
         throw new ValidationError('Assigned user is not a member of the team');
       }
     }
