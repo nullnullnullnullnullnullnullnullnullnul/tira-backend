@@ -99,10 +99,14 @@ export async function deleteTaskTag(task_id: string, tag_id: string, db: Executo
   return (result.rowCount ?? 0) > 0;
 }
 
-// Select all tags for a task
+// Select all tags for a task. Explicit column list (rather than t.*)
+// so adding a new column to the tags table does not silently widen
+// every response and pull bytes the caller did not ask for.
 export async function selectTagsByTask(task_id: string, db: Executor = pool): Promise<Tag[]> {
   const result = await db.query(`
-    SELECT t.*
+    SELECT t.tag_id,
+           t.team_id,
+           t.name
     FROM task_tags tt
     JOIN tags t ON tt.tag_id = t.tag_id
     WHERE tt.task_id = $1
@@ -112,7 +116,9 @@ export async function selectTagsByTask(task_id: string, db: Executor = pool): Pr
   return result.rows;
 }
 
-// Select all tasks for a tag
+// Select all tasks for a tag. Explicit column list mirrors the Task
+// model exactly; if a new column lands on tasks it has to be added
+// here deliberately, which is the point.
 export async function selectTasksByTag(
   tag_id: string,
   page: number = 1,
@@ -121,8 +127,18 @@ export async function selectTasksByTag(
 ): Promise<PaginatedResult<Task>> {
   const offset = (page - 1) * pageSize;
   const result = await db.query(`
-    SELECT t.*,
-           COUNT(*) OVER() as total_count
+    SELECT t.task_id,
+           t.team_id,
+           t.assigned_to,
+           t.created_by,
+           t.title,
+           t.description,
+           t.status,
+           t.priority,
+           t.deadline,
+           t.content,
+           t.last_modified_at,
+           COUNT(*) OVER() AS total_count
     FROM task_tags tt
     JOIN tasks t ON tt.task_id = t.task_id
     WHERE tt.tag_id = $1

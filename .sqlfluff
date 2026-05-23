@@ -41,7 +41,7 @@ extended_capitalisation_policy = lower
 # resolve as identifiers, not types, so they stay lowercase per the
 # identifiers rule above.
 extended_capitalisation_policy = upper
-ignore_words = user_role_enum, task_status_enum, task_priority_enum
+ignore_words = user_role_enum, task_status_enum, task_priority_enum, task_history_change_type_enum, task_history_entity_enum
 
 [sqlfluff:rules:convention.not_equal]
 # Use <> instead of !=
