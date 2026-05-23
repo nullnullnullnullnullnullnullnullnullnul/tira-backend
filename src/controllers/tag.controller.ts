@@ -108,7 +108,7 @@ export async function addTagToTask(
   try {
     const { task_id } = req.params;
     const { tag_id } = req.body;
-    const taskTag = await tagService.addTagToTask(task_id, tag_id);
+    const taskTag = await tagService.addTagToTask(req.userId, task_id, tag_id);
     res.status(201).json(taskTag);
   } catch (err) {
     next(err);
@@ -123,7 +123,7 @@ export async function removeTagFromTask(
 ) {
   try {
     const { task_id, tag_id } = req.params;
-    const success = await tagService.removeTagFromTask(task_id, tag_id);
+    const success = await tagService.removeTagFromTask(req.userId, task_id, tag_id);
     res.status(204).send();
   } catch (err) {
     next(err);

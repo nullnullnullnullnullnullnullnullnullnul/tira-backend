@@ -6,6 +6,7 @@ import { Tag, TaskTag } from '../models/tag';
 import { Task } from '../models/task';
 import { PaginatedResult } from '../models/pagination';
 import { NotFoundError, ValidationError, ConflictError, InternalServerError } from '../utils/AppError';
+import { withAuditedTransaction } from '../utils/transaction';
 
 const tagNameRegex = /^[A-Za-z0-9 _-]{1,20}$/;
 
@@ -16,7 +17,15 @@ function isValidTagName(name: string): boolean {
   return tagNameRegex.test(name);
 }
 
-// Create a tag
+// Create a tag.
+//
+// Not wrapped in withAuditedTransaction: INSERT tags does not fire
+// any audit trigger (the trigger in migration 0012 is on task_tags,
+// not tags itself), so there is nothing to attribute. The two reads
+// before the INSERT are an existence check and a uniqueness check;
+// the UNIQUE (team_id, name) constraint already prevents the race
+// from creating duplicates.
+//
 // todo: validate permission to create tag (must be team member)
 export async function createTag(
   team_id: string,
@@ -59,7 +68,10 @@ export async function getTagById(tag_id: string, team_id: string): Promise<Tag> 
   return tag;
 }
 
-// Update tag name
+// Update tag name.
+//
+// Not wrapped in a transaction: UPDATE tags does not fire any audit
+// trigger.
 // todo: validate permission to update tag (must be team member)
 export async function updateTag(
   tag_id: string,
@@ -79,7 +91,15 @@ export async function updateTag(
   return updated;
 }
 
-// Delete tag
+// Delete tag.
+//
+// Not wrapped in a transaction: DELETE tags does not fire any audit
+// trigger directly. The CASCADE to task_tags WILL fire the
+// log_tag_activity_fn trigger for each removed link, but those rows
+// will record changed_by = NULL because the deletion path is not
+// under withAuditedTransaction. That tradeoff is documented in the
+// migration; the alternative (wrapping every cascading delete) is
+// more code than the audit value justifies for this project.
 // todo: validate permission to delete tag (must be team member)
 export async function deleteTag(tag_id: string, team_id: string): Promise<void> {
   // Check if tag exists
@@ -87,41 +107,54 @@ export async function deleteTag(tag_id: string, team_id: string): Promise<void> 
   await tagRepository.deleteTag(tag_id, team_id);
 }
 
-// Add tag to task
+// Add tag to task.
+//
+// Wrapped in withAuditedTransaction because INSERT task_tags fires
+// the log_tag_activity_fn trigger, which reads the
+// app.current_user_id session variable for changed_by attribution.
 // todo: validate permission (must be team member and task must belong to team)
 export async function addTagToTask(
+  actingUserId: string | undefined,
   task_id: string,
   tag_id: string
 ): Promise<TaskTag> {
-  // Check if task exists
-  const task = (await taskRepository.selectTask({ task_id }, 1, 1)).data[0];
-  if (!task) throw new NotFoundError('Task');
-  // Check if tag exists and belongs to the same team as the task
-  const tag = (await tagRepository.selectTags({ tag_id, team_id: task.team_id }, 1, 1)).data[0];
-  if (!tag) throw new NotFoundError('Tag');
-  const taskTag: TaskTag = {
-    task_tags_id: ulid(),
-    task_id,
-    tag_id,
-  };
-  const newTaskTag = await tagRepository.insertTaskTag(taskTag);
-  if (!newTaskTag) throw new ConflictError('Tag already assigned to this task');
-  return newTaskTag;
+  return withAuditedTransaction(actingUserId, async (db) => {
+    // Check if task exists
+    const task = (await taskRepository.selectTask({ task_id }, 1, 1, db)).data[0];
+    if (!task) throw new NotFoundError('Task');
+    // Check if tag exists and belongs to the same team as the task
+    const tag = (await tagRepository.selectTags({ tag_id, team_id: task.team_id }, 1, 1, db)).data[0];
+    if (!tag) throw new NotFoundError('Tag');
+    const taskTag: TaskTag = {
+      task_tags_id: ulid(),
+      task_id,
+      tag_id,
+    };
+    const newTaskTag = await tagRepository.insertTaskTag(taskTag, db);
+    if (!newTaskTag) throw new ConflictError('Tag already assigned to this task');
+    return newTaskTag;
+  });
 }
 
-// Remove tag from task
+// Remove tag from task.
+//
+// Wrapped in withAuditedTransaction because DELETE task_tags fires
+// the log_tag_activity_fn trigger.
 // todo: validate permission (must be team member)
 export async function removeTagFromTask(
+  actingUserId: string | undefined,
   task_id: string,
   tag_id: string
 ): Promise<void> {
-  // Check if task exists
-  const task = (await taskRepository.selectTask({ task_id }, 1, 1)).data[0];
-  if (!task) throw new NotFoundError('Task');
-  // Check if tag exists
-  const tag = (await tagRepository.selectTags({ tag_id, team_id: task.team_id }, 1, 1)).data[0];
-  if (!tag) throw new NotFoundError('Tag');
-  await tagRepository.deleteTaskTag(task_id, tag_id);
+  await withAuditedTransaction(actingUserId, async (db) => {
+    // Check if task exists
+    const task = (await taskRepository.selectTask({ task_id }, 1, 1, db)).data[0];
+    if (!task) throw new NotFoundError('Task');
+    // Check if tag exists
+    const tag = (await tagRepository.selectTags({ tag_id, team_id: task.team_id }, 1, 1, db)).data[0];
+    if (!tag) throw new NotFoundError('Tag');
+    await tagRepository.deleteTaskTag(task_id, tag_id, db);
+  });
 }
 
 // Get all tags for a task
