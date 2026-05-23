@@ -89,6 +89,14 @@ $$ LANGUAGE plpgsql;
 
 
 -- Down Migration
+--
+-- WARNING: DESTRUCTIVE. Rolling this migration down drops the
+-- changed_by column, which IS NOT recoverable: every audit row's
+-- attribution disappears with the column, and node-pg-migrate has
+-- no facility to back up data before the DROP. Do NOT run
+-- `npm run db:migrate:down` past this point in production unless
+-- you have already exported task_history elsewhere.
+--
 -- Restore the original (changed_by-less) audit functions and drop
 -- the column. Existing audit rows are preserved minus their
 -- changed_by data; the column itself goes away.
