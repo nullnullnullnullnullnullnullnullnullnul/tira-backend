@@ -1,4 +1,4 @@
-import pool from '../db';
+import pool, { Executor } from '../db';
 import { Task, TaskFilter } from '../models/task';
 import { PaginatedResult, createPaginatedResult } from '../models/pagination';
 
@@ -18,7 +18,8 @@ import { PaginatedResult, createPaginatedResult } from '../models/pagination';
 export async function selectTask(
   filter: TaskFilter = {},
   page: number = 1,
-  pageSize: number = 100
+  pageSize: number = 100,
+  db: Executor = pool,
 ): Promise<PaginatedResult<Task>> {
   const conditions: string[] = [];
   const values: any[] = [];
@@ -44,7 +45,7 @@ export async function selectTask(
   // Pagination
   const offset = (page - 1) * pageSize;
   values.push(pageSize, offset);
-  const result = await pool.query(`
+  const result = await db.query(`
     SELECT *,
       COUNT(*) OVER() as total_count
     FROM tasks
@@ -58,8 +59,8 @@ export async function selectTask(
 }
 
 // Add task
-export async function insertTask(task: Task): Promise<Task | null> {
-  const result = await pool.query(`
+export async function insertTask(task: Task, db: Executor = pool): Promise<Task | null> {
+  const result = await db.query(`
     INSERT INTO tasks(
       task_id,
       team_id,
@@ -84,10 +85,10 @@ export async function insertTask(task: Task): Promise<Task | null> {
 }
 
 // Remove task
-export async function deleteTask(task_id: string): Promise<boolean> {
-  const result = await pool.query(`
-    DELETE 
-    FROM tasks 
+export async function deleteTask(task_id: string, db: Executor = pool): Promise<boolean> {
+  const result = await db.query(`
+    DELETE
+    FROM tasks
     WHERE task_id = $1
     `,
     [task_id]
@@ -105,7 +106,8 @@ export async function deleteTask(task_id: string): Promise<boolean> {
 // - content
 export async function updateTask(
   task_id: string,
-  fields: Partial<Omit<Task, 'task_id' | 'team_id' | 'created_by' | 'last_modified_at'>>
+  fields: Partial<Omit<Task, 'task_id' | 'team_id' | 'created_by' | 'last_modified_at'>>,
+  db: Executor = pool,
 ): Promise<Task | null> {
   const keys = Object.keys(fields) as (keyof typeof fields)[];
   // keys = ["title", "status", "deadline"]
@@ -115,7 +117,7 @@ export async function updateTask(
     const val = (fields as any)[k];
     return val instanceof Date ? val.toISOString() : val;
   });
-  const result = await pool.query(`
+  const result = await db.query(`
       UPDATE tasks
       SET ${setClauses.join(', ')}, last_modified_at = NOW()
       WHERE task_id = $${keys.length + 1}

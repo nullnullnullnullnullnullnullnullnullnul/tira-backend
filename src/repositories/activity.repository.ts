@@ -1,4 +1,4 @@
-import pool from '../db';
+import pool, { Executor } from '../db';
 import { TaskHistory } from '../models/activity';
 import { PaginatedResult, createPaginatedResult } from '../models/pagination';
 
@@ -6,8 +6,8 @@ import { PaginatedResult, createPaginatedResult } from '../models/pagination';
  * Get all task IDs from teams that a user belongs to
  * Uses a single optimized query with JOIN
  */
-export async function getTaskIdsByUser(user_id: string): Promise<string[]> {
-    const result = await pool.query(`
+export async function getTaskIdsByUser(user_id: string, db: Executor = pool): Promise<string[]> {
+    const result = await db.query(`
         SELECT DISTINCT t.task_id
         FROM tasks t
         JOIN team_members tm ON t.team_id = tm.team_id
@@ -23,7 +23,8 @@ export async function getTaskIdsByUser(user_id: string): Promise<string[]> {
 export async function selectTaskHistory(
     task_ids: string[],
     page: number = 1,
-    pageSize: number = 20
+    pageSize: number = 20,
+    db: Executor = pool,
 ): Promise<PaginatedResult<TaskHistory>> {
     // If no task_ids provided, return empty result
     if (!task_ids || task_ids.length === 0) {
@@ -42,7 +43,7 @@ export async function selectTaskHistory(
     const placeholders = task_ids.map((_, index) => `$${index + 1}`).join(', ');
     // Values array: task_ids + pageSize + offset
     const values = [...task_ids, pageSize, offset];
-    const result = await pool.query(`
+    const result = await db.query(`
     SELECT *,
       COUNT(*) OVER() as total_count
     FROM task_history

@@ -1,5 +1,15 @@
-import { Pool } from "pg";
+import { Pool, PoolClient } from "pg";
 import { env } from "../config/env";
+
+/**
+ * Any object that can run a `query()`: either the shared pool (the
+ * default) or a PoolClient checked out for a transaction. Repository
+ * functions accept this type so the same code path serves both
+ * single-statement reads/writes and multi-statement transactional
+ * sequences. See src/utils/transaction.ts for the helper that runs a
+ * callback inside an audited transaction.
+ */
+export type Executor = Pool | PoolClient;
 
 /**
  * Shared Postgres connection pool.
