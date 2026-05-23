@@ -9,11 +9,17 @@ export const validPriorities: TaskPriority[] = ['high', 'medium', 'low'];
  * Task entity model
  * Extends BaseModel for compatibility with PaginatedResult
  */
+// assigned_to and created_by are nullable because their FK constraints
+// declare ON DELETE SET NULL (see migrations/0006_create-tasks.sql).
+// Deleting a user does not delete the tasks they created or were
+// assigned; the column is zeroed out so the task survives as an
+// orphaned-but-readable row. New tasks always carry both fields as
+// non-null (createTask requires them at the service layer).
 export type Task = BaseModel & {
   task_id: string;
   team_id: string;
-  assigned_to: string;
-  created_by: string;
+  assigned_to: string | null;
+  created_by: string | null;
   title: string;
   description: string | null;
   status: TaskStatus;

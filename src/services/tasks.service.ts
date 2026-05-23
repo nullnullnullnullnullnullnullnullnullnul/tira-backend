@@ -40,10 +40,18 @@ function isValidDeadline(deadline: string): boolean {
 // the audit triggers read for changed_by attribution; pass undefined
 // when there is no authenticated caller and the audit row will record
 // changed_by NULL.
+// The Task model declares assigned_to as nullable to reflect the
+// ON DELETE SET NULL behaviour at the database, but createTask
+// requires a non-null assignee at creation time. Intersect to
+// override just that one field.
+type CreateTaskFields = Omit<Task, 'task_id' | 'created_by' | 'last_modified_at' | 'assigned_to'> & {
+  assigned_to: string;
+};
+
 export async function createTask(
   actingUserId: string | undefined,
   created_by: string,
-  fields: Omit<Task, 'task_id' | 'created_by' | 'last_modified_at'>
+  fields: CreateTaskFields,
 ): Promise<Task> {
   if (!isValidTitle(fields.title)) throw new ValidationError('Invalid task title');
   if (!isValidStatus(fields.status)) throw new ValidationError('Invalid task status');
@@ -136,12 +144,15 @@ export async function updateTask(
     const taskResult = await taskRepository.selectTask({ task_id }, 1, 1, db);
     const task = taskResult.data[0];
     if (!task) throw new NotFoundError('Task');
-    // If updating assigned_to, validate the user exists and is a team member
-    if (fields.assigned_to !== undefined) {
-      const assignedUser = (await userRepository.selectUsers({ user_id: fields.assigned_to }, 1, 1, db)).data[0];
+    // If updating assigned_to to a real user, validate they exist and
+    // are a team member. assigned_to = null means "unassign" and skips
+    // the membership check (FK is ON DELETE SET NULL, NULL is valid).
+    if (fields.assigned_to !== undefined && fields.assigned_to !== null) {
+      const newAssignee = fields.assigned_to;
+      const assignedUser = (await userRepository.selectUsers({ user_id: newAssignee }, 1, 1, db)).data[0];
       if (!assignedUser) throw new NotFoundError('Assigned user');
       const members = await teamRepository.selectMembers(task.team_id, 1, 100, db);
-      if (!members.data.find(m => m.user_id === fields.assigned_to)) {
+      if (!members.data.find(m => m.user_id === newAssignee)) {
         throw new ValidationError('Assigned user is not a member of the team');
       }
     }
